@@ -87,6 +87,8 @@ a{color:var(--c-water)}
     <select id="speed" aria-label="Playback speed"><option value="0">paused</option><option value="0.00011574">10 seconds per frame</option><option value="0.00069444">1 minute per frame</option><option value="0.006944">10 minutes per frame</option><option value="0.041667" selected>1 hour per frame</option><option value="0.25">6 hours per frame</option><option value="1">1 day per frame</option><option value="5">5 days per frame</option><option value="20">20 days per frame</option></select></div>
   <div class="grp"><span class="lbl">Resources</span><span id="chips" class="grp"></span>
     <select id="evMin" aria-label="Minimum evidence"><option value="0">all evidence</option><option value="1">inferred and better</option><option value="2">strong and better</option><option value="3">confirmed only</option></select></div>
+  <div class="grp"><span class="lbl">Routes from</span><select id="routeFrom" aria-label="Show routes from"><option value="">none</option></select>
+    <select id="horizon" aria-label="Waiting horizon"><option value="18">wait up to 6 months</option><option value="37" selected>wait up to 1 year</option><option value="79">wait up to 26 months</option></select></div>
   <div class="grp"><button type="button" id="btnTop">Top view</button><button type="button" id="btnReset">Whole system</button><button type="button" id="btnLabels" aria-pressed="true">Labels</button></div>
 </header>
 
@@ -96,6 +98,9 @@ a{color:var(--c-water)}
 <script id="atlas-data" type="application/json">/*ATLAS_DATA*/</script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script id="net-data" type="application/json">/*NET*/</script>
+<script id="fb-data" type="application/json">/*FLYBY*/</script>
+<script>/*ENGINE*/</script>
 <script>
 const DATA = JSON.parse(document.getElementById('atlas-data').textContent);
 const BODIES = DATA.bodies, BY = Object.fromEntries(BODIES.map(b => [b.id, b]));
@@ -359,7 +364,8 @@ function dossier(b) {
 }
 function renderPanel() {
   const b = state.sel && BY[state.sel];
-  $('panel').innerHTML = b ? dossier(b) : intro();
+  $('panel').innerHTML = b ? dossier(b) : (state.routeFrom ? routesPanel() : intro());
+  bindRoutes();
   $('panel').querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', () => select(el.dataset.open)));
   const back = $('btnBack'); if (back) back.addEventListener('click', () => { select(null); resetView(); });
   for (const [id, l] of Object.entries(labels)) l.classList.toggle('sel', id === state.sel);
@@ -373,10 +379,119 @@ function select(id) {
   renderPanel();
 }
 
+/* ---------- travel network ---------- */
+// Route costs come from the solmaps DE440 network (best departure inside the waiting horizon); the arc drawn for
+// each route is the same transfer solved again between the displayed positions, so it meets the bodies on screen.
+const NET = JSON.parse(document.getElementById('net-data').textContent);
+const FBR = JSON.parse(document.getElementById('fb-data').textContent);
+const ENG = window.NetEngine, K2 = 2.9591220828e-4;
+const ROUTES = {}; for (const r of NET.routes) ROUTES[r.from + '>' + r.to] = r;
+const AB = { earth: 'E', venus: 'V', mars: 'Ma', jupiter: 'J', saturn: 'S', mercury: 'Me', ceres: 'C', vesta: 'Ve', psyche: 'P' };
+Object.assign(state, { routeFrom: '', H: 37, hl: null, flights: [] });
+const routeGroup = new THREE.Group(), flightGroup = new THREE.Group(); scene.add(routeGroup); scene.add(flightGroup);
+let routeKey = '', routeList = [];
+const kOf = jd => Math.floor((jd - NET.meta.jd0) / NET.meta.step_days);
+const jdOfK = k => NET.meta.jd0 + k * NET.meta.step_days;
+const isoOf = jd => new Date(msOf(jd)).toISOString().slice(0, 10);
+function bestDirect(from, to, k, H) {
+  const r = ROUTES[from + '>' + to]; if (!r) return null;
+  let b = null;
+  for (let j = Math.max(0, k); j <= Math.min(k + H, NET.meta.n - 1); j++) { if (r.dep[j] == null) continue; const v = r.dep[j] + r.arr[j]; if (!b || v < b.dv) b = { dv: v, k: j, tof: r.tof[j] }; }
+  return b;
+}
+function bestFlyby(from, to, jd0, jd1) {
+  let b = null;
+  for (const f of FBR) { if (f.origin !== from || f.target !== to || !f.feasible || f.seq.length < 3) continue; const jd = f.launch_mjd2000 + 2451544.5; if (jd >= jd0 && jd <= jd1 && (!b || f.dv < b.dv)) b = f; }
+  return b;
+}
+function rv2el(r, v) {                                   // heliocentric state (AU, AU/day) -> elements
+  const R = Math.hypot(...r), V2 = v[0] ** 2 + v[1] ** 2 + v[2] ** 2, rv = r[0] * v[0] + r[1] * v[1] + r[2] * v[2];
+  const h = [r[1] * v[2] - r[2] * v[1], r[2] * v[0] - r[0] * v[2], r[0] * v[1] - r[1] * v[0]], hn = Math.hypot(...h);
+  const n = [-h[1], h[0], 0], nn = Math.hypot(n[0], n[1]);
+  const ev = [0, 1, 2].map(i => ((V2 - K2 / R) * r[i] - rv * v[i]) / K2), e = Math.hypot(...ev);
+  const a = 1 / (2 / R - V2 / K2), I = Math.acos(h[2] / hn);
+  const node = nn > 1e-12 ? Math.atan2(n[1], n[0]) : 0;
+  let w = nn > 1e-12 && e > 1e-9 ? Math.acos(Math.max(-1, Math.min(1, (n[0] * ev[0] + n[1] * ev[1]) / (nn * e)))) : Math.atan2(ev[1], ev[0]);
+  if (nn > 1e-12 && ev[2] < 0) w = 2 * Math.PI - w;
+  let nu = Math.acos(Math.max(-1, Math.min(1, (ev[0] * r[0] + ev[1] * r[1] + ev[2] * r[2]) / (e * R))));
+  if (rv < 0) nu = 2 * Math.PI - nu;
+  const E0 = 2 * Math.atan(Math.sqrt((1 - e) / (1 + e)) * Math.tan(nu / 2));
+  return { a, e, I, node, w, M0: E0 - e * Math.sin(E0), n: Math.sqrt(K2 / Math.abs(a) ** 3) };
+}
+function arcAt(el, t) { return toXYZ(el.a, el.e, el.I, el.node, el.w, keplerE(el.M0 + el.n * t, el.e)); }
+function solveArc(from, to, jdDep, tof) {
+  const s1 = ENG.stateAt(BY[from], jdDep), s2 = ENG.stateAt(BY[to], jdDep + tof); if (!s1 || !s2) return null;
+  const L = ENG.lambert(s1.r, s2.r, tof, K2); if (!L) return null;
+  const el = rv2el(s1.r, L.v1); return el.e < 1 && el.a > 0 ? el : null;
+}
+function arcLine(el, tof, color, opacity) {
+  const pts = []; for (let i = 0; i <= 120; i++) pts.push(S(arcAt(el, tof * i / 120)));
+  return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
+}
+function rampColor(dv) { const t = Math.min(1, Math.max(0, (dv - 3) / 12)), c = new THREE.Color(); c.setHSL(0.13 - 0.13 * t, 0.9, 0.62 - 0.18 * t); return c; }
+function clearGroup(g) { for (const c of [...g.children]) { g.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); } }
+function rebuildRoutes() {
+  clearGroup(routeGroup); routeList = [];
+  const from = state.routeFrom; if (!from) return;
+  const k = Math.max(0, kOf(state.jd));
+  for (const n of NET.nodes) {
+    if (n.id === from) continue;
+    const b = bestDirect(from, n.id, k, state.H); if (!b) continue;
+    const jdDep = jdOfK(b.k), el = solveArc(from, n.id, jdDep, b.tof);
+    const fly = bestFlyby(from, n.id, jdOfK(k), jdOfK(k + state.H));
+    routeList.push({ to: n.id, name: n.name, dv: b.dv, jdDep, tof: b.tof, el, fly });
+    if (!el) continue;
+    const hl = state.hl, op = hl ? (hl === n.id ? 1 : 0.18) : 0.8;
+    routeGroup.add(arcLine(el, b.tof, rampColor(b.dv), op));
+  }
+  routeList.sort((a, b) => a.dv - b.dv);
+}
+function updateRoutes() {
+  const key = [state.routeFrom, Math.max(0, kOf(state.jd)), state.H, state.hl].join('|');
+  if (key !== routeKey) { routeKey = key; rebuildRoutes(); if (!state.sel && state.routeFrom) renderPanel(); }
+  for (const f of state.flights) {                       // launched flights: a ship moves along its arc while in flight
+    const t = state.jd - f.jdDep;
+    f.ship.visible = t >= 0 && t <= f.tof;
+    if (f.ship.visible) f.ship.position.copy(S(arcAt(f.el, t)));
+    f.line.material.opacity = t > f.tof ? 0.25 : 0.95;
+  }
+}
+function launch(r) {
+  if (!r.el) return;
+  const line = arcLine(r.el, r.tof, 0xffffff, 0.95);
+  const ship = new THREE.Mesh(new THREE.OctahedronGeometry(0.18), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  flightGroup.add(line); flightGroup.add(ship);
+  state.flights.push({ from: state.routeFrom, to: r.to, name: r.name, dv: r.dv, jdDep: r.jdDep, tof: r.tof, el: r.el, line, ship });
+  updateRoutes(); renderPanel();
+}
+function routesPanel() {
+  const from = state.routeFrom, k = Math.max(0, kOf(state.jd));
+  const rows = routeList.map(r => {
+    const flyTxt = r.fly && r.fly.dv < r.dv ? `<div class="meta">flyby ${r.fly.seq.map(s => AB[s] || s).join('-')}: ${r.fly.dv.toFixed(2)} km/s, leave ${isoOf(r.fly.launch_mjd2000 + 2451544.5)}, ${Math.round(r.fly.tof_days)} days</div>` : '';
+    return `<div class="r" style="border-left-color:#${rampColor(r.dv).getHexString()}"><div class="head"><span class="name">${esc(r.name)}</span><span class="vt">${r.dv.toFixed(2)} km/s</span></div>
+      <div class="meta">leave ${isoOf(r.jdDep)} · ${r.tof} days${r.el ? '' : ' · no arc drawn'}</div>${flyTxt}
+      <div class="list"><button type="button" data-hl="${r.to}" aria-pressed="${state.hl === r.to}">Highlight</button><button type="button" data-launch="${r.to}" ${r.el ? '' : 'disabled'}>Launch a ship</button><button type="button" data-go="${r.to}">Jump to departure</button></div></div>`;
+  }).join('');
+  const fl = state.flights.map((f, i) => { const t = state.jd - f.jdDep; const st = t < 0 ? `departs in ${Math.ceil(-t)} days` : t <= f.tof ? `in flight, day ${Math.floor(t)} of ${f.tof}` : 'arrived'; return `<div class="meta">${esc(BY[f.from].name)} to ${esc(f.name)}: ${st}</div>`; }).join('');
+  return `<div><h2>Routes from ${esc(BY[from].name)}</h2><p class="caveat">Cheapest departure within the waiting horizon from ${isoOf(jdOfK(k))}. Δv includes the burn out of the parking orbit and into the destination's (rendezvous at small bodies); colours run from cheap (gold) to costly (red). Flyby alternatives come from the pykep search where it has run.</p></div>
+    ${state.flights.length ? `<div><h3>Your ships</h3>${fl}<p class="caveat">Press play (1 hour or 6 hours per frame works well) to watch them fly.</p></div>` : ''}
+    <div class="res">${rows}</div>
+    <p class="caveat">Costs: ${esc(NET.meta.ephemeris || '')}. ${esc(NET.meta.method)}</p>`;
+}
+function bindRoutes() {
+  const P = $('panel');
+  P.querySelectorAll('[data-hl]').forEach(b => b.addEventListener('click', () => { state.hl = state.hl === b.dataset.hl ? null : b.dataset.hl; routeKey = ''; updateRoutes(); renderPanel(); }));
+  P.querySelectorAll('[data-launch]').forEach(b => b.addEventListener('click', () => { const r = routeList.find(x => x.to === b.dataset.launch); if (r) launch(r); }));
+  P.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const r = routeList.find(x => x.to === b.dataset.go); if (r) setJD(r.jdDep); }));
+}
+$('routeFrom').innerHTML = '<option value="">none</option>' + NET.nodes.map(n => `<option value="${n.id}">${esc(n.name)}</option>`).join('');
+$('routeFrom').addEventListener('change', e => { state.routeFrom = e.target.value; state.hl = null; routeKey = ''; updateRoutes(); if (!state.sel) renderPanel(); });
+$('horizon').addEventListener('change', e => { state.H = +e.target.value; routeKey = ''; updateRoutes(); });
+
 /* ---------- controls ---------- */
 const DAY0 = Date.UTC(2026, 0, 1), DAY1 = Date.UTC(2100, 11, 31), TODAY = Date.UTC(2026, 9, 30);
 const jdOf = ms => ms / 864e5 + 2440587.5, msOf = jd => (jd - 2440587.5) * 864e5;
-function setJD(jd) { state.jd = jd; $('dateOut').textContent = new Date(msOf(jd)).toISOString().slice(0, 10) + (msOf(jd) > Date.UTC(2050, 11, 31) ? ' ~' : ''); $('dateSlider').value = Math.round((msOf(jd) - DAY0) / 864e5); place(jd); }
+function setJD(jd) { state.jd = jd; $('dateOut').textContent = new Date(msOf(jd)).toISOString().slice(0, 10) + (msOf(jd) > Date.UTC(2050, 11, 31) ? ' ~' : ''); $('dateSlider').value = Math.round((msOf(jd) - DAY0) / 864e5); place(jd); if (typeof updateRoutes === 'function' && NET) updateRoutes(); }
 $('dateSlider').max = Math.round((DAY1 - DAY0) / 864e5);
 $('dateSlider').addEventListener('input', e => setJD(jdOf(DAY0 + (+e.target.value) * 864e5)));
 $('chips').innerHTML = CATS.map(c => `<button type="button" class="chip" data-cat="${c.id}" aria-pressed="true">${glyph(c)}${c.label}</button>`).join('');
