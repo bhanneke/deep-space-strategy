@@ -11,6 +11,8 @@ MU_E, R_LEO = 398600.4, 6378 + 300          # km^3/s^2, km
 # capture orbits, same as network/nodes.js (radius in km)
 PARK = {'mars': 3396 + 300, 'venus': 6052 + 300, 'mercury': 2440 + 200, 'jupiter': 1882700, 'saturn': 1221900}
 
+OUT_OF_RANGE = 999.0                         # penalty, km/s: routes that need positions after 2050
+
 def leo_burn(vinf):                          # km/s
     return math.sqrt(vinf * vinf + 2 * MU_E / R_LEO) - math.sqrt(MU_E / R_LEO)
 
@@ -59,7 +61,10 @@ class Route:
             kw.update(add_vinf_arr=True)
         self.inner = pk.trajopt.mga_1dsm(**kw)
     def fitness(self, x):
-        return [self.inner.fitness(x)[0] / 1000.0 + leo_burn(x[3] / 1000.0)]
+        try:
+            return [self.inner.fitness(x)[0] / 1000.0 + leo_burn(x[3] / 1000.0)]
+        except ValueError:                                  # an encounter after 2050, outside the ephemeris range
+            return [OUT_OF_RANGE]
     def get_bounds(self):
         return self.inner.get_bounds()
 
@@ -88,7 +93,9 @@ if __name__ == '__main__':
             t0 = [pk.epoch(f'{y}-01-01').mjd2000, pk.epoch(f'{y + width}-01-01').mjd2000]
             for seq in SEQS[tgt]:
                 t = time.time()
-                r = solve(seq, t0, seed=y, **budget)
+                # two independent starts, keep the better one
+                r = min((solve(seq, t0, seed=y * 10 + k, **budget) for k in range(2)), key=lambda s: s['dv'])
+                r['feasible'] = bool(r['dv'] < OUT_OF_RANGE)
                 r.update(target=tgt, bin=f'{y}-{y + width - 1}', seconds=round(time.time() - t, 1))
                 out.append(r)
                 print(json.dumps(r), flush=True)
