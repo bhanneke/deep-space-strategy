@@ -5110,5 +5110,293 @@
   "bin": "2077-2078",
   "feasible": true,
   "seconds": 43.3
+ },
+ {
+  "seq": [
+   "earth",
+   "vesta"
+  ],
+  "dv": 10.159,
+  "launch_mjd2000": 29344.7,
+  "vinf_dep": 5.629,
+  "dep_burn": 4.565,
+  "tof_days": 593.9,
+  "arrival_mjd2000": 29938.6,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2079-2080",
+  "feasible": true,
+  "seconds": 0.8
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "vesta"
+  ],
+  "dv": 8.683,
+  "launch_mjd2000": 29307.8,
+  "vinf_dep": 3.971,
+  "dep_burn": 3.899,
+  "tof_days": 634.3,
+  "arrival_mjd2000": 29942.1,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2079-2080",
+  "feasible": true,
+  "seconds": 31.2
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "vesta"
+  ],
+  "dv": 9.803,
+  "launch_mjd2000": 29586.0,
+  "vinf_dep": 5.475,
+  "dep_burn": 4.495,
+  "tof_days": 1486.1,
+  "arrival_mjd2000": 31072.1,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2079-2080",
+  "feasible": true,
+  "seconds": 18.3
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "mars",
+   "vesta"
+  ],
+  "dv": 7.704,
+  "launch_mjd2000": 29394.2,
+  "vinf_dep": 4.362,
+  "dep_burn": 4.039,
+  "tof_days": 1993.1,
+  "arrival_mjd2000": 31387.3,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2079-2080",
+  "feasible": true,
+  "seconds": 43.5
+ },
+ {
+  "seq": [
+   "earth",
+   "vesta"
+  ],
+  "dv": 9.817,
+  "launch_mjd2000": 30316.0,
+  "vinf_dep": 5.492,
+  "dep_burn": 4.503,
+  "tof_days": 755.6,
+  "arrival_mjd2000": 31071.6,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2081-2082",
+  "feasible": true,
+  "seconds": 9.5
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "vesta"
+  ],
+  "dv": 7.288,
+  "launch_mjd2000": 30171.8,
+  "vinf_dep": 4.235,
+  "dep_burn": 3.992,
+  "tof_days": 1101.6,
+  "arrival_mjd2000": 31273.4,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2081-2082",
+  "feasible": true,
+  "seconds": 28.8
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "vesta"
+  ],
+  "dv": 8.472,
+  "launch_mjd2000": 30104.6,
+  "vinf_dep": 5.241,
+  "dep_burn": 4.392,
+  "tof_days": 1211.8,
+  "arrival_mjd2000": 31316.4,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2081-2082",
+  "feasible": true,
+  "seconds": 35.9
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "mars",
+   "vesta"
+  ],
+  "dv": 7.289,
+  "launch_mjd2000": 29805.2,
+  "vinf_dep": 4.233,
+  "dep_burn": 3.992,
+  "tof_days": 1468.7,
+  "arrival_mjd2000": 31273.9,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2081-2082",
+  "feasible": true,
+  "seconds": 34.4
+ },
+ {
+  "seq": [
+   "earth",
+   "vesta"
+  ],
+  "dv": 9.039,
+  "launch_mjd2000": 30862.0,
+  "vinf_dep": 6.266,
+  "dep_burn": 4.87,
+  "tof_days": 492.0,
+  "arrival_mjd2000": 31354.0,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2083-2084",
+  "feasible": true,
+  "seconds": 1.0
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "vesta"
+  ],
+  "dv": 10.953,
+  "launch_mjd2000": 30910.0,
+  "vinf_dep": 6.465,
+  "dep_burn": 4.97,
+  "tof_days": 1048.0,
+  "arrival_mjd2000": 31957.9,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2083-2084",
+  "feasible": true,
+  "seconds": 31.0
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "vesta"
+  ],
+  "dv": 9.79,
+  "launch_mjd2000": 30455.2,
+  "vinf_dep": 4.707,
+  "dep_burn": 4.171,
+  "tof_days": 892.9,
+  "arrival_mjd2000": 31348.2,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2083-2084",
+  "feasible": true,
+  "seconds": 4.5
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "mars",
+   "vesta"
+  ],
+  "dv": 8.046,
+  "launch_mjd2000": 30927.7,
+  "vinf_dep": 2.799,
+  "dep_burn": 3.553,
+  "tof_days": 1768.0,
+  "arrival_mjd2000": 32695.7,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2083-2084",
+  "feasible": true,
+  "seconds": 49.3
+ },
+ {
+  "seq": [
+   "earth",
+   "vesta"
+  ],
+  "dv": 10.657,
+  "launch_mjd2000": 31295.9,
+  "vinf_dep": 4.524,
+  "dep_burn": 4.1,
+  "tof_days": 541.2,
+  "arrival_mjd2000": 31837.1,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2085-2086",
+  "feasible": true,
+  "seconds": 8.7
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "vesta"
+  ],
+  "dv": 7.782,
+  "launch_mjd2000": 31677.9,
+  "vinf_dep": 3.564,
+  "dep_burn": 3.767,
+  "tof_days": 1027.8,
+  "arrival_mjd2000": 32705.7,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2085-2086",
+  "feasible": true,
+  "seconds": 20.9
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "vesta"
+  ],
+  "dv": 8.992,
+  "launch_mjd2000": 31575.6,
+  "vinf_dep": 5.277,
+  "dep_burn": 4.408,
+  "tof_days": 1369.3,
+  "arrival_mjd2000": 32944.8,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2085-2086",
+  "feasible": true,
+  "seconds": 18.7
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "mars",
+   "vesta"
+  ],
+  "dv": 8.747,
+  "launch_mjd2000": 31225.2,
+  "vinf_dep": 2.521,
+  "dep_burn": 3.487,
+  "tof_days": 1483.1,
+  "arrival_mjd2000": 32708.3,
+  "origin": "earth",
+  "target": "vesta",
+  "bin": "2085-2086",
+  "feasible": true,
+  "seconds": 45.7
  }
 ]

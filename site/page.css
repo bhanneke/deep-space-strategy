@@ -1,0 +1,38 @@
+/* Layout: a single reading column on a dark chart ground, shared by the landing page and the documentation. Dark-only like the tools. */
+:root{
+  --void:#05070d;
+  --deck:#0c111b;
+  --rule:#233049;
+  --ink:#dfe5ef;
+  --dim:#8a96ad;
+  --sun:#f0b347;
+  --link:#62a6ec;
+  --f-display:"Saira Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html{background:var(--void)}
+body{margin:0;background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:700;font-size:44px;letter-spacing:.06em;text-transform:uppercase;margin:0;line-height:1.05;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:24px;letter-spacing:.05em;text-transform:uppercase;margin:16px 0 0;color:var(--sun)}
+h3{font-size:16px;margin:8px 0 0}
+p,li{max-width:68ch}
+p{margin:0}
+a{color:var(--link)}
+code,pre{font-family:var(--f-mono);font-size:13.5px}
+pre{background:var(--deck);border:1px solid var(--rule);border-radius:6px;padding:12px 14px;overflow-x:auto;margin:0}
+.lede{font-size:18px;color:var(--dim)}
+.exp{border-left:3px solid var(--sun);padding:8px 12px;background:var(--deck);border-radius:0 6px 6px 0}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.tool{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--rule);border-radius:8px;background:var(--deck);color:var(--ink);text-decoration:none}
+.tool:hover{border-color:var(--sun)}
+.tool strong{font-family:var(--f-display);font-size:21px;letter-spacing:.04em}
+.tool span{color:var(--dim);font-size:14.5px;line-height:1.5}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--rule);padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{color:var(--dim);font-weight:500}
+.foot{color:var(--dim);font-size:14px;border-top:1px solid var(--rule);padding-top:14px}

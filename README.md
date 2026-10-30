@@ -10,7 +10,13 @@ solmaps computes transfer costs between solar-system sites for every departure d
 | --- | --- |
 | `atlas/` | Resource atlas: verified dataset (`atlas_dataset.json`, every entry with evidence level and source) and the interactive map (`build.py` renders `solar-system-atlas.html`) |
 | `network/` | Temporal transfer network: Lambert solver and parking-orbit costs (`engine.js`), route precomputation (`compute.js`), depot-orbit search (`stations.js`), validation (`validate.js`), growth-map page (`build.py`) |
-| `env/` | Container environment with ESA pykep 3.0.0 from conda-forge, for flyby sequences |
+| `env/` | Container environment with ESA pykep 3.0.0 and pygmo from conda-forge, for flyby sequences |
+| `flyby/` | DE440 bodies, the Python direct network to 2100, the flyby search (Earth and Mars origins), cycler metric, mission validation |
+| `atlas3d/` | The 3D atlas with transfer arcs and launchable ships |
+| `surrogate/` | Route dataset generator and the first learned surrogate (PyTorch, separate container) |
+| `site/` | Landing page, documentation and `build_site.py`, which writes the public site into `docs/` for GitHub Pages |
+
+The public site and its documentation ("How solmaps works") live at https://bhanneke.github.io/solmaps/ once GitHub Pages is switched on. The site is an experimental research prototype.
 
 ## Rebuild
 

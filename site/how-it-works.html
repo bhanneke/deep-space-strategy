@@ -1,0 +1,80 @@
+<title>How solmaps works</title>
+<meta name="description" content="Data, models, validation and build steps behind solmaps.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="page.css">
+<main>
+  <p><a href="index.html">solmaps</a></p>
+  <h1>How solmaps works</h1>
+  <p class="lede">solmaps computes what it costs to travel between places in the solar system on any date until 2100, and what that means for which places matter. This page lists the data, the models, the checks against real missions and the limits.</p>
+  <p class="exp"><strong>Status: experimental.</strong> Every model here simplifies the physics. The results are good enough to compare routes, dates and hubs, and to see which way an effect points. Mission design needs higher-fidelity tools such as NASA GMAT or ESA's own trajectory software.</p>
+
+  <h2>Data</h2>
+  <p>The resource atlas holds 37 entries: the planets, the major moons, Ceres, Vesta, Psyche, Pluto, three named near-Earth asteroids (Eros, Bennu, Ryugu), five asteroid populations and the Sun–Earth and Earth–Moon Lagrange points. It lists 98 resource entries, for water and other volatiles, metals, nitrogen, carbon and phosphorus, hydrogen and helium-3, silicates and sunlight.</p>
+  <p>Each resource entry carries two labels. The evidence level says how well science knows it: <em>confirmed</em> (measured in place or in a returned sample), <em>strong</em> (several independent remote-sensing lines), <em>inferred</em> (spectral class or density analogy) or <em>speculative</em>. The verification tag says how solmaps checked it: <em>page-checked</em> (read on the source page), <em>snippet-only</em> (seen only in search results), <em>derived</em> (computed from checked inputs) or <em>unverified</em>. Of the 98 entries, 63 are page-checked. Sources include NASA's NSSDC fact sheets, JPL's Solar System Dynamics pages, mission pages and peer-reviewed papers; every entry links to its source.</p>
+
+  <h2>Where things are</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Use</th><th>Source</th><th>Range and accuracy</th></tr></thead>
+    <tbody>
+      <tr><td>Route costs (growth map, 3D routes)</td><td>JPL DE440 ephemeris via ESA pykep (planet-system barycentres)</td><td>About 1849 to 2150; agrees with the JPL Table 1 positions to 0.00003 AU for Mars in 2040</td></tr>
+      <tr><td>Planet positions on the maps</td><td>JPL "Approximate Positions of the Planets", Table 1</td><td>Valid 1800 to 2050; later dates on the maps are approximate and marked</td></tr>
+      <tr><td>Ceres, Vesta, Psyche, Pluto, Eros, Bennu, Ryugu</td><td>JPL Small-Body Database elements, two-body motion</td><td>Planetary perturbations are ignored, so accuracy falls over decades</td></tr>
+      <tr><td>Moons</td><td>JPL mean elements at J2000, period from the parent's mass</td><td>Rough; the 3D atlas spreads moon distances out for visibility</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Direct transfers</h2>
+  <p>A direct route is one transfer arc from one site to another. For every departure date, every ten days from November 2026 to the end of 2100, solmaps solves Lambert's problem (the arc that connects two positions in a given flight time) for 30 flight times between 0.3 and 1.8 times the Hohmann time, and keeps the cheapest. That gives 132 routes between 12 sites over 2,709 departure dates.</p>
+  <p>The cost includes the burn that leaves a parking orbit and the burn that captures into the destination's parking orbit, using the Oberth relation <code>Δv = √(v∞² + 2μ/r) − √(μ/r)</code>. Parking orbits: 300 km above Earth, Mars and Venus, 200 km above Mercury, 50 km above Ceres, and circular orbits at the distance of Callisto (Jupiter) and Titan (Saturn). Small asteroids are reached by matching their velocity. All burns are impulsive; low-thrust electric propulsion is not modelled.</p>
+
+  <h2>Flyby routes</h2>
+  <p>Flyby routes use planets as slingshots. solmaps searches sequences with up to two flybys of Venus, Earth, Mars or Jupiter, from low Earth orbit and from low Mars orbit, to Jupiter, Saturn, Mercury, Ceres, Vesta and Psyche. Each leg may include one deep-space manoeuvre (pykep's MGA-1DSM model). A global optimiser (pygmo's self-adaptive differential evolution, eight islands, two independent starts per problem) finds the cheapest route in each two-year launch window. Leg flight times are capped at 1.9 times the Hohmann time.</p>
+  <p>Typical savings against the direct route: 2.6 to 5.6 km/s to Mercury via Venus, 2.5 to 4.4 km/s to Saturn via Jupiter, up to 2.8 km/s to Vesta via Mars, 0.5 to 1.7 km/s to Jupiter via an Earth flyby. The flyby search through 2098 was still running when this page was written; the pages show the windows that are finished.</p>
+
+  <h2>Checks against reality</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Check</th><th>Reference</th><th>solmaps</th></tr></thead>
+    <tbody>
+      <tr><td>Leaving low Earth orbit for Mars</td><td>3.6 km/s (published Δv tables)</td><td>3.61 km/s</td></tr>
+      <tr><td>Leaving low Earth orbit for Jupiter</td><td>6.3 km/s</td><td>6.44 km/s</td></tr>
+      <tr><td>Earth to Mars transfer, 30 Oct 2026, 308 days</td><td>pykep's Lambert solver: v∞ 3.03 and 2.58 km/s</td><td>Same values</td></tr>
+      <tr><td>Two independent network implementations, 2026–2048</td><td>JavaScript on JPL Table 1 against Python on DE440</td><td>Median difference 0.000 km/s, 95th percentile 0.02 km/s</td></tr>
+      <tr><td>Cassini (Earth–Venus–Venus–Earth–Jupiter–Saturn)</td><td>Flown launch and flyby dates, 1997–1999</td><td>Launch and inner flybys within 9 to 34 days</td></tr>
+      <tr><td>Juno, Galileo, Dawn</td><td>Flown sequences and dates</td><td>Same sequences; inner encounters within one to three months</td></tr>
+    </tbody>
+  </table></div>
+  <p>The optimiser only minimises Δv. Real missions also had to respect launch energy, arrival dates and, for Dawn, ion propulsion, so solmaps often picks a slower, cheaper arrival (Cassini at Saturn, Galileo at Jupiter).</p>
+
+  <h2>Strategy measures</h2>
+  <h3>Propellant leverage</h3>
+  <p>A hub with local water can refuel ships, so the propellant for the onward leg never leaves Earth. For each destination, solmaps compares the Earth-launched mass for a direct flight, <code>exp(Δv_direct / vₑ)</code>, with the mass needed to reach the hub, <code>exp(Δv_hub / vₑ)</code>. A destination counts only when the hub is cheaper to reach than the destination and lies closer to it than low Earth orbit does. The measure ignores dry mass, tankage, time at the hub and the cost of the plant. In the current results an Earth–Moon L1 depot fed by lunar ice saves 64 to 86 percent of Earth-launched mass across the period.</p>
+  <h3>Depot orbits</h3>
+  <p>solmaps scored 771 candidate solar orbits by two costs: the average cheapest transfer to eight destinations over 20 years, and the cost of supplying the depot from low Earth orbit. No orbit wins on both; the growth map lists the orbits that no other orbit beats on both costs.</p>
+  <h3>Cyclers</h3>
+  <p>A cycler metric for Earth–Mars cyclers (maintenance burns at the flybys and the speeds a taxi must match) is in development.</p>
+
+  <h2>The 3D atlas</h2>
+  <p>Distances from the Sun are compressed logarithmically and sizes are enlarged, so Mercury and the Kuiper belt fit in one view. Directions and inclinations are true. Asteroid populations are drawn as clouds of illustrative particles inside their published ranges. Route arcs are solved again between the displayed positions, so they meet the bodies on screen; their costs come from the DE440 network.</p>
+
+  <h2>Build it yourself</h2>
+  <p>The computations run in a container with ESA pykep and pygmo from conda-forge, so nothing needs installing on the host apart from Docker, Python 3 and Node.</p>
+  <pre>docker build -t solmaps-env env/
+docker run --rm -v "$PWD":/work solmaps-env python flyby/network2.py       # direct network, DE440, to 2100
+docker run --rm -v "$PWD":/work solmaps-env python flyby/routes.py earth jupiter,saturn,mercury 2027 2097 8 2000 30 6
+docker run --rm -v "$PWD":/work solmaps-env python flyby/routes.py mars jupiter,saturn,ceres,vesta,psyche 2027 2097 8 2000 30 6
+node network/stations.js                                                  # depot-orbit search
+python3 site/build_site.py                                                # pages into docs/</pre>
+  <p>Validation scripts: <code>network/validate.js</code>, <code>flyby/validate_cassini.py</code>, <code>flyby/validate_missions.py</code> and <code>flyby/compare_networks.py</code>.</p>
+
+  <h2>Limits and next steps</h2>
+  <ul>
+    <li>Impulsive burns and patched conics; no low-thrust trajectories, no aerocapture, no lunar flybys.</li>
+    <li>Small-body orbits ignore planetary perturbations.</li>
+    <li>Resource entries tagged snippet-only or unverified still need checking against their primary sources.</li>
+    <li>Next: flyby routes for the full period, the cycler metric, and a learned model that estimates transfer costs fast enough for large searches.</li>
+  </ul>
+
+  <p class="foot">solmaps is a research project by Björn Hanneke. It builds on JPL's ephemerides and Small-Body Database, ESA's pykep, pygmo and three.js. No licence has been chosen for solmaps yet, so all rights to its own code and data stay with the author until one is added.</p>
+</main>

@@ -42,6 +42,7 @@ a{color:var(--c-water)}
 .top > *{pointer-events:auto}
 .brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.07em;text-transform:uppercase}
 .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.exp{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--sun);border:1px solid var(--sun);border-radius:10px;padding:2px 9px;text-decoration:none}
 .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .date{font-family:var(--f-mono);color:var(--sun);min-width:10ch;font-variant-numeric:tabular-nums}
 #dateSlider{width:min(260px,50vw)}
@@ -83,6 +84,7 @@ a{color:var(--c-water)}
 
 <header class="top">
   <div class="brand">Solar System 3D Atlas</div>
+  <a class="exp" href="https://bhanneke.github.io/solmaps/how-it-works.html" target="_blank" rel="noopener" title="Orbits are approximations and the display scale is compressed. Click for how it is built.">Experimental · how it is built</a>
   <div class="grp"><span class="lbl">Date</span><input type="range" id="dateSlider" min="0" max="1" step="1" aria-label="Date"><span class="date" id="dateOut"></span>
     <select id="speed" aria-label="Playback speed"><option value="0">paused</option><option value="0.00011574">10 seconds per frame</option><option value="0.00069444">1 minute per frame</option><option value="0.006944">10 minutes per frame</option><option value="0.041667" selected>1 hour per frame</option><option value="0.25">6 hours per frame</option><option value="1">1 day per frame</option><option value="5">5 days per frame</option><option value="20">20 days per frame</option></select></div>
   <div class="grp"><span class="lbl">Resources</span><span id="chips" class="grp"></span>
