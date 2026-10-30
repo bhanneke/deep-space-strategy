@@ -7,3 +7,4 @@ network/stations.json
 network/stations.log
 .claude/
 flyby/*.log
+__pycache__/
