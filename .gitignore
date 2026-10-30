@@ -10,3 +10,5 @@ flyby/*.log
 __pycache__/
 flyby/*.log
 network/network.json
+surrogate/*.npz
+surrogate/*.pt

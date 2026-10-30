@@ -1,0 +1,10 @@
+{
+ "test_samples": 48181,
+ "mae_kms": 2.4798076152801514,
+ "median_abs_err_kms": 1.772390365600586,
+ "p95_abs_err_kms": 7.215389251708984,
+ "share_within_0_5_kms": 0.16172350096511073,
+ "median_rel_err": 0.0853031799197197,
+ "spearman_rank": 0.9607955394182133,
+ "tof_median_rel_err": 0.10201594978570938
+}

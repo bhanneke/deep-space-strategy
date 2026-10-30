@@ -1,0 +1,220 @@
+[
+ {
+  "seq": [
+   "earth",
+   "jupiter"
+  ],
+  "dv": 11.109,
+  "launch_mjd2000": 10191.1,
+  "vinf_dep": 8.786,
+  "dep_burn": 6.295,
+  "tof_days": 1123.9,
+  "arrival_mjd2000": 11315.0,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 4.1
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "jupiter"
+  ],
+  "dv": 14.171,
+  "launch_mjd2000": 10356.6,
+  "vinf_dep": 4.062,
+  "dep_burn": 3.931,
+  "tof_days": 1610.0,
+  "arrival_mjd2000": 11966.6,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 11.2
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "jupiter"
+  ],
+  "dv": 13.342,
+  "launch_mjd2000": 10320.9,
+  "vinf_dep": 5.695,
+  "dep_burn": 4.595,
+  "tof_days": 2291.2,
+  "arrival_mjd2000": 12612.2,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 0.7
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "jupiter"
+  ],
+  "dv": 11.022,
+  "launch_mjd2000": 10592.9,
+  "vinf_dep": 8.152,
+  "dep_burn": 5.906,
+  "tof_days": 1442.3,
+  "arrival_mjd2000": 12035.2,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 35.0
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "earth",
+   "jupiter"
+  ],
+  "dv": 12.525,
+  "launch_mjd2000": 10198.4,
+  "vinf_dep": 5.63,
+  "dep_burn": 4.565,
+  "tof_days": 2254.4,
+  "arrival_mjd2000": 12452.8,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 50.0
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "venus",
+   "jupiter"
+  ],
+  "dv": 12.026,
+  "launch_mjd2000": 10431.6,
+  "vinf_dep": 5.787,
+  "dep_burn": 4.638,
+  "tof_days": 2333.1,
+  "arrival_mjd2000": 12764.7,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 48.6
+ },
+ {
+  "seq": [
+   "earth",
+   "jupiter"
+  ],
+  "dv": 11.102,
+  "launch_mjd2000": 10980.2,
+  "vinf_dep": 8.601,
+  "dep_burn": 6.179,
+  "tof_days": 987.4,
+  "arrival_mjd2000": 11967.6,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 11.2
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "jupiter"
+  ],
+  "dv": 13.842,
+  "launch_mjd2000": 10889.5,
+  "vinf_dep": 4.287,
+  "dep_burn": 4.011,
+  "tof_days": 1513.8,
+  "arrival_mjd2000": 12403.3,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 36.0
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "jupiter"
+  ],
+  "dv": 9.89,
+  "launch_mjd2000": 11011.4,
+  "vinf_dep": 5.241,
+  "dep_burn": 4.392,
+  "tof_days": 1663.9,
+  "arrival_mjd2000": 12675.3,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 35.9
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "jupiter"
+  ],
+  "dv": 12.15,
+  "launch_mjd2000": 10769.2,
+  "vinf_dep": 5.003,
+  "dep_burn": 4.291,
+  "tof_days": 2533.8,
+  "arrival_mjd2000": 13303.1,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 28.9
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "earth",
+   "jupiter"
+  ],
+  "dv": 11.893,
+  "launch_mjd2000": 10828.3,
+  "vinf_dep": 5.673,
+  "dep_burn": 4.585,
+  "tof_days": 1459.0,
+  "arrival_mjd2000": 12287.3,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 62.1
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "venus",
+   "jupiter"
+  ],
+  "dv": 11.535,
+  "launch_mjd2000": 10892.2,
+  "vinf_dep": 3.723,
+  "dep_burn": 3.817,
+  "tof_days": 2365.7,
+  "arrival_mjd2000": 13257.9,
+  "origin": "earth",
+  "target": "jupiter",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 51.3
+ }
+]

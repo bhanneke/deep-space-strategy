@@ -1,0 +1,272 @@
+[
+ {
+  "seq": [
+   "earth",
+   "ceres"
+  ],
+  "dv": 10.822,
+  "launch_mjd2000": 10225.6,
+  "vinf_dep": 6.083,
+  "dep_burn": 4.779,
+  "tof_days": 898.0,
+  "arrival_mjd2000": 11123.6,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 3.7
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "ceres"
+  ],
+  "dv": 9.793,
+  "launch_mjd2000": 9997.2,
+  "vinf_dep": 4.867,
+  "dep_burn": 4.235,
+  "tof_days": 1336.4,
+  "arrival_mjd2000": 11333.6,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 13.4
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "ceres"
+  ],
+  "dv": 10.636,
+  "launch_mjd2000": 10434.1,
+  "vinf_dep": 5.171,
+  "dep_burn": 4.362,
+  "tof_days": 1584.0,
+  "arrival_mjd2000": 12018.1,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 33.5
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "ceres"
+  ],
+  "dv": 13.579,
+  "launch_mjd2000": 10360.1,
+  "vinf_dep": 4.124,
+  "dep_burn": 3.952,
+  "tof_days": 970.0,
+  "arrival_mjd2000": 11330.1,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 4.0
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "mars",
+   "ceres"
+  ],
+  "dv": 9.893,
+  "launch_mjd2000": 10050.8,
+  "vinf_dep": 3.332,
+  "dep_burn": 3.697,
+  "tof_days": 1423.9,
+  "arrival_mjd2000": 11474.7,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2027-2028",
+  "feasible": true,
+  "seconds": 40.0
+ },
+ {
+  "seq": [
+   "earth",
+   "ceres"
+  ],
+  "dv": 11.146,
+  "launch_mjd2000": 11124.2,
+  "vinf_dep": 5.861,
+  "dep_burn": 4.673,
+  "tof_days": 898.0,
+  "arrival_mjd2000": 12022.3,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 7.0
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "ceres"
+  ],
+  "dv": 10.842,
+  "launch_mjd2000": 11308.8,
+  "vinf_dep": 5.303,
+  "dep_burn": 4.419,
+  "tof_days": 1326.2,
+  "arrival_mjd2000": 12635.0,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 15.0
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "ceres"
+  ],
+  "dv": 9.982,
+  "launch_mjd2000": 10898.7,
+  "vinf_dep": 5.189,
+  "dep_burn": 4.37,
+  "tof_days": 1669.7,
+  "arrival_mjd2000": 12568.4,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 29.1
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "ceres"
+  ],
+  "dv": 13.682,
+  "launch_mjd2000": 10918.5,
+  "vinf_dep": 3.458,
+  "dep_burn": 3.734,
+  "tof_days": 578.4,
+  "arrival_mjd2000": 11496.9,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 25.2
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "mars",
+   "ceres"
+  ],
+  "dv": 10.563,
+  "launch_mjd2000": 10900.8,
+  "vinf_dep": 3.907,
+  "dep_burn": 3.878,
+  "tof_days": 1528.3,
+  "arrival_mjd2000": 12429.1,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2029-2030",
+  "feasible": true,
+  "seconds": 39.3
+ },
+ {
+  "seq": [
+   "earth",
+   "ceres"
+  ],
+  "dv": 10.75,
+  "launch_mjd2000": 11665.9,
+  "vinf_dep": 6.752,
+  "dep_burn": 5.118,
+  "tof_days": 898.0,
+  "arrival_mjd2000": 12563.9,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2031-2032",
+  "feasible": true,
+  "seconds": 1.2
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "ceres"
+  ],
+  "dv": 9.692,
+  "launch_mjd2000": 11462.0,
+  "vinf_dep": 3.885,
+  "dep_burn": 3.87,
+  "tof_days": 1494.7,
+  "arrival_mjd2000": 12956.6,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2031-2032",
+  "feasible": true,
+  "seconds": 27.2
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "ceres"
+  ],
+  "dv": 10.658,
+  "launch_mjd2000": 12049.9,
+  "vinf_dep": 5.809,
+  "dep_burn": 4.648,
+  "tof_days": 1052.1,
+  "arrival_mjd2000": 13102.0,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2031-2032",
+  "feasible": true,
+  "seconds": 13.7
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "ceres"
+  ],
+  "dv": 13.63,
+  "launch_mjd2000": 11470.0,
+  "vinf_dep": 4.077,
+  "dep_burn": 3.936,
+  "tof_days": 571.4,
+  "arrival_mjd2000": 12041.4,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2031-2032",
+  "feasible": true,
+  "seconds": 14.2
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "mars",
+   "ceres"
+  ],
+  "dv": 9.896,
+  "launch_mjd2000": 11684.0,
+  "vinf_dep": 4.043,
+  "dep_burn": 3.924,
+  "tof_days": 1966.7,
+  "arrival_mjd2000": 13650.6,
+  "origin": "earth",
+  "target": "ceres",
+  "bin": "2031-2032",
+  "feasible": true,
+  "seconds": 51.0
+ }
+]
