@@ -5,3 +5,5 @@ network/solar-system-growth-map.html
 network/network.json
 network/stations.json
 network/stations.log
+.claude/
+flyby/*.log
