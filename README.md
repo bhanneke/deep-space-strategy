@@ -1,6 +1,6 @@
-# solmaps
+# solmaps: the engine of Deep Space Strategy
 
-A queryable timetable of routes through the solar system, and the strategy analysis built on it.
+Deep Space Strategy studies strategy for a settled solar system in five modules: Geography, Resources, Topology, Infrastructure and Strategy. solmaps is its open map and route engine: a queryable timetable of routes through the solar system, and the strategy analysis built on it.
 
 solmaps computes transfer costs between solar-system sites for every departure date, ranks propellant hubs by how much Earth-launched mass they save, and searches for depot orbits around the Sun. The technical documentation (concept, formulas, references) is at https://bhanneke.github.io/solmaps/technical.html.
 
