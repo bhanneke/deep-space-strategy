@@ -541,5 +541,7 @@ function frame(t) {
   }
   requestAnimationFrame(frame);
 }
+// open with the travel network visible: routes from Earth
+state.routeFrom = 'earth'; $('routeFrom').value = 'earth';
 resize(); refreshGlyphs(); setJD(jdOf(TODAY)); renderPanel(); requestAnimationFrame(frame);
 </script>
