@@ -1,0 +1,7 @@
+.DS_Store
+# generated pages and precomputed data (rebuild with the scripts)
+atlas/solar-system-atlas.html
+network/solar-system-growth-map.html
+network/network.json
+network/stations.json
+network/stations.log
