@@ -42,6 +42,8 @@ a{color:var(--c-water)}
 .top > *{pointer-events:auto}
 .brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.07em;text-transform:uppercase}
 .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sl{display:flex;gap:5px;align-items:center;font-size:13px;color:#4fd6e8;cursor:pointer}
+.sling{border-left:3px dashed #4fd6e8;padding-left:8px;margin-top:6px}
 .exp{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--sun);border:1px solid var(--sun);border-radius:10px;padding:2px 9px;text-decoration:none}
 .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .date{font-family:var(--f-mono);color:var(--sun);min-width:10ch;font-variant-numeric:tabular-nums}
@@ -90,7 +92,7 @@ a{color:var(--c-water)}
   <div class="grp"><span class="lbl">Resources</span><span id="chips" class="grp"></span>
     <select id="evMin" aria-label="Minimum evidence"><option value="0">all evidence</option><option value="1">inferred and better</option><option value="2">strong and better</option><option value="3">confirmed only</option></select></div>
   <div class="grp"><select id="routeMode" aria-label="Route direction"><option value="from">Routes from</option><option value="to">Routes to</option></select><select id="routeFrom" aria-label="Site for routes"><option value="">none</option></select>
-    <select id="horizon" aria-label="Waiting horizon"><option value="18">wait up to 6 months</option><option value="37" selected>wait up to 1 year</option><option value="79">wait up to 26 months</option></select></div>
+    <select id="horizon" aria-label="Waiting horizon"><option value="18">wait up to 6 months</option><option value="37" selected>wait up to 1 year</option><option value="79">wait up to 26 months</option></select><label class="sl"><input type="checkbox" id="sling" checked> slingshots</label></div>
   <div class="grp"><button type="button" id="btnTop">Top view</button><button type="button" id="btnReset">Whole system</button><button type="button" id="btnLabels" aria-pressed="true">Labels</button></div>
 </header>
 
@@ -389,7 +391,7 @@ const FBR = JSON.parse(document.getElementById('fb-data').textContent);
 const ENG = window.NetEngine, K2 = 2.9591220828e-4;
 const ROUTES = {}; for (const r of NET.routes) ROUTES[r.from + '>' + r.to] = r;
 const AB = { earth: 'E', venus: 'V', mars: 'Ma', jupiter: 'J', saturn: 'S', mercury: 'Me', ceres: 'C', vesta: 'Ve', psyche: 'P' };
-Object.assign(state, { routeFrom: '', routeMode: 'from', H: 37, hl: null, flights: [] });
+Object.assign(state, { routeFrom: '', routeMode: 'from', H: 37, hl: null, flights: [], sling: true });
 const routeGroup = new THREE.Group(), flightGroup = new THREE.Group(); scene.add(routeGroup); scene.add(flightGroup);
 let routeKey = '', routeList = [];
 const kOf = jd => Math.floor((jd - NET.meta.jd0) / NET.meta.step_days);
@@ -400,6 +402,22 @@ function bestDirect(from, to, k, H) {
   let b = null;
   for (let j = Math.max(0, k); j <= Math.min(k + H, NET.meta.n - 1); j++) { if (r.dep[j] == null) continue; const v = r.dep[j] + r.arr[j]; if (!b || v < b.dv) b = { dv: v, k: j, tof: r.tof[j] }; }
   return b;
+}
+function windowsDirect(from, to, k, H) {               // every launch window inside the horizon: cheapest date of each dip in cost
+  const r = ROUTES[from + '>' + to]; if (!r) return [];
+  const j0 = Math.max(0, k), j1 = Math.min(k + H, NET.meta.n - 1), v = j => r.dep[j] == null ? Infinity : r.dep[j] + r.arr[j];
+  const mins = [];
+  for (let j = j0; j <= j1; j++) {
+    const c = v(j); if (!isFinite(c)) continue;
+    if ((j === j0 || c <= v(j - 1)) && (j === j1 || c <= v(j + 1))) mins.push({ dv: c, k: j, tof: r.tof[j] });
+  }
+  mins.sort((a, b) => a.dv - b.dv);
+  const kept = [];
+  for (const m of mins) {                                 // dips closer than 60 days belong to the same window
+    if (kept.length && m.dv > kept[0].dv + 3) break;      // and windows 3 km/s above the best are not worth listing
+    if (kept.every(x => Math.abs(x.k - m.k) >= 6)) kept.push(m);
+  }
+  return kept.sort((a, b) => a.k - b.k);
 }
 function bestFlyby(from, to, jd0, jd1) {
   let b = null;
@@ -430,24 +448,92 @@ function arcLine(el, tof, color, opacity) {
   const pts = []; for (let i = 0; i <= 120; i++) pts.push(S(arcAt(el, tof * i / 120)));
   return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
 }
+// Slingshot paths. Routes saved since the encounter dates were recorded carry them; for older routes the page estimates
+// the flyby dates: it tries every split of the flight between launch and arrival and keeps the one whose Lambert legs
+// need the least launch and arrival speed and match best at each flyby (an unpowered flyby keeps the speed relative to the planet).
+const FLY_PATHS = new Map();
+function legState(a, b, jd1, jd2) {
+  const s1 = ENG.stateAt(BY[a], jd1), s2 = ENG.stateAt(BY[b], jd2); if (!s1 || !s2 || jd2 - jd1 < 20) return null;
+  const L = ENG.lambert(s1.r, s2.r, jd2 - jd1, K2); if (!L || !L.v1.every(isFinite)) return null;
+  const el = rv2el(s1.r, L.v1); if (!(el.e < 1 && el.a > 0)) return null;
+  const sub = (x, y) => Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+  return { from: a, to: b, jd: jd1, tof: jd2 - jd1, el, vOut: sub(L.v1, s1.v), vIn: sub(L.v2, s2.v) };
+}
+function pathFor(seq, jds) {
+  const legs = [];
+  for (let i = 0; i < seq.length - 1; i++) { const l = legState(seq[i], seq[i + 1], jds[i], jds[i + 1]); if (!l) return null; legs.push(l); }
+  let cost = legs[0].vOut + legs[legs.length - 1].vIn;
+  for (let i = 1; i < legs.length; i++) cost += 3 * Math.abs(legs[i - 1].vIn - legs[i].vOut);
+  return { legs, cost };
+}
+function flybyPath(f) {
+  const id = f.origin + f.target + f.launch_mjd2000 + f.seq.join();
+  if (FLY_PATHS.has(id)) return FLY_PATHS.get(id);
+  const L = f.launch_mjd2000 + 2451544.5, A = L + f.tof_days, m = f.seq.length - 2;
+  let best = null, estimated = !f.encounters_mjd2000;
+  if (!estimated) best = pathFor(f.seq, f.encounters_mjd2000.map(x => x + 2451544.5));
+  if (!best) {
+    estimated = true;
+    const n = m === 1 ? 90 : 36;
+    for (let i = 1; i < n; i++) {
+      if (m === 1) { const p = pathFor(f.seq, [L, L + (A - L) * i / n, A]); if (p && (!best || p.cost < best.cost)) best = p; continue; }
+      for (let j = i + 1; j < n; j++) { const p = pathFor(f.seq, [L, L + (A - L) * i / n, L + (A - L) * j / n, A]); if (p && (!best || p.cost < best.cost)) best = p; }
+    }
+  }
+  const out = best ? { legs: best.legs, estimated, tof: A - L, jdDep: L } : null;
+  FLY_PATHS.set(id, out); return out;
+}
+function drawFlyby(group, path, color, opacity) {
+  for (const l of path.legs) {
+    const line = arcLine(l.el, l.tof, color, opacity);
+    line.material = new THREE.LineDashedMaterial({ color, transparent: true, opacity, dashSize: 0.35, gapSize: 0.2 });
+    line.computeLineDistances(); group.add(line);
+  }
+  for (const l of path.legs.slice(1)) {                     // ring at each flyby planet, where it is on the flyby date
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.42, 24), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide }));
+    ring.position.copy(S(arcAt(l.el, 0))); ring.lookAt(camera.position); group.add(ring);
+  }
+}
+const SLING = 0x4fd6e8;
 function rampColor(dv) { const t = Math.min(1, Math.max(0, (dv - 3) / 12)), c = new THREE.Color(); c.setHSL(0.13 - 0.13 * t, 0.9, 0.62 - 0.18 * t); return c; }
 function clearGroup(g) { for (const c of [...g.children]) { g.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); } }
 function rebuildRoutes() {
   clearGroup(routeGroup); routeList = [];
   const site = state.routeFrom; if (!site) return;
   const k = Math.max(0, kOf(state.jd)), toMode = state.routeMode === 'to';
+  const groups = [];
   for (const n of NET.nodes) {
     if (n.id === site) continue;
     const from = toMode ? n.id : site, to = toMode ? site : n.id;
-    const b = bestDirect(from, to, k, state.H); if (!b) continue;
-    const jdDep = jdOfK(b.k), el = solveArc(from, to, jdDep, b.tof);
-    const fly = bestFlyby(from, to, jdOfK(k), jdOfK(k + state.H));
-    routeList.push({ key: n.id, from, to, name: n.name, dv: b.dv, jdDep, tof: b.tof, el, fly });
-    if (!el) continue;
-    const hl = state.hl, op = hl ? (hl === n.id ? 1 : 0.18) : 0.8;
-    routeGroup.add(arcLine(el, b.tof, rampColor(b.dv), op));
+    const wins = windowsDirect(from, to, k, state.H); if (!wins.length) continue;
+    const rows = wins.map(b => {
+      const jdDep = jdOfK(b.k);
+      return { key: n.id + '@' + b.k, site: n.id, from, to, name: n.name, dv: b.dv, jdDep, tof: b.tof, el: solveArc(from, to, jdDep, b.tof), fly: null };
+    });
+    // each flyby route in the horizon goes with the window whose departure date lies closest
+    const jd0 = jdOfK(k), jd1 = jdOfK(k + state.H);
+    for (const f of FBR) {
+      if (f.origin !== from || f.target !== to || !f.feasible || f.seq.length < 3) continue;
+      const jd = f.launch_mjd2000 + 2451544.5; if (jd < jd0 || jd > jd1) continue;
+      const w = rows.reduce((a, b) => Math.abs(b.jdDep - jd) < Math.abs(a.jdDep - jd) ? b : a);
+      if (!w.fly || f.dv < w.fly.dv) w.fly = f;
+    }
+    groups.push({ best: Math.min(...rows.map(r => r.dv)), rows });
   }
-  routeList.sort((a, b) => a.dv - b.dv);
+  groups.sort((a, b) => a.best - b.best);
+  for (const g of groups) for (const r of g.rows) {
+    routeList.push(r);
+    if (!r.el) continue;
+    const hl = state.hl, op = hl ? (hl === r.key ? 1 : 0.15) : 0.75;
+    routeGroup.add(arcLine(r.el, r.tof, rampColor(r.dv), op));
+  }
+  if (!state.sling) return;
+  for (const r of routeList) {
+    if (!r.fly) continue;
+    r.flyPath = flybyPath(r.fly); if (!r.flyPath) continue;
+    const hl = state.hl, op = hl ? (hl === r.key + '~' ? 1 : 0.12) : 0.85;
+    drawFlyby(routeGroup, r.flyPath, SLING, op);
+  }
 }
 function updateRoutes() {
   const key = [state.routeMode, state.routeFrom, Math.max(0, kOf(state.jd)), state.H, state.hl].join('|');
@@ -455,9 +541,20 @@ function updateRoutes() {
   for (const f of state.flights) {                       // launched flights: a ship moves along its arc while in flight
     const t = state.jd - f.jdDep;
     f.ship.visible = t >= 0 && t <= f.tof;
-    if (f.ship.visible) f.ship.position.copy(S(arcAt(f.el, t)));
-    f.line.material.opacity = t > f.tof ? 0.25 : 0.95;
+    if (f.ship.visible && f.legs) { const l = f.legs.find(x => state.jd <= x.jd + x.tof) || f.legs[f.legs.length - 1]; f.ship.position.copy(S(arcAt(l.el, Math.max(0, state.jd - l.jd)))); }
+    else if (f.ship.visible) f.ship.position.copy(S(arcAt(f.el, t)));
+    if (f.group) f.group.children.forEach(c => { c.material.opacity = t > f.tof ? 0.25 : 0.95; });
+    else f.line.material.opacity = t > f.tof ? 0.25 : 0.95;
   }
+}
+function launchSling(r) {
+  const p = r.flyPath; if (!p) return;
+  const group = new THREE.Group(); drawFlyby(group, p, 0xffffff, 0.95);
+  const ship = new THREE.Mesh(new THREE.OctahedronGeometry(0.18), new THREE.MeshBasicMaterial({ color: SLING }));
+  flightGroup.add(group); flightGroup.add(ship);
+  state.flights.push({ from: r.fly.origin, to: r.fly.target, name: BY[r.fly.target].name + ' via ' + r.fly.seq.slice(1, -1).map(x => BY[x].name).join(' and '),
+    dv: r.fly.dv, jdDep: p.jdDep, tof: p.tof, legs: p.legs, line: { material: group.children[0].material }, ship, group });
+  updateRoutes(); renderPanel();
 }
 function launch(r) {
   if (!r.el) return;
@@ -469,14 +566,21 @@ function launch(r) {
 }
 function routesPanel() {
   const from = state.routeFrom, k = Math.max(0, kOf(state.jd));
-  const rows = routeList.map(r => {
-    const flyTxt = r.fly && r.fly.dv < r.dv ? `<div class="meta">flyby ${r.fly.seq.map(s => AB[s] || s).join('-')}: ${r.fly.dv.toFixed(2)} km/s, leave ${isoOf(r.fly.launch_mjd2000 + 2451544.5)}, ${Math.round(r.fly.tof_days)} days</div>` : '';
-    return `<div class="r" style="border-left-color:#${rampColor(r.dv).getHexString()}"><div class="head"><span class="name">${esc(r.name)}</span><span class="vt">${r.dv.toFixed(2)} km/s</span></div>
+  const rows = routeList.map((r, i) => {
+    const first = i === 0 || routeList[i - 1].site !== r.site;
+    let flyTxt = '';
+    if (r.fly && state.sling) {
+      const d = r.dv - r.fly.dv, via = r.fly.seq.slice(1, -1).map(x => BY[x] ? BY[x].name : x).join(', then ');
+      flyTxt = `<div class="sling"><div class="head"><span class="name" style="color:#4fd6e8">Slingshot via ${esc(via)}</span><span class="vt">${r.fly.dv.toFixed(2)} km/s</span></div>
+        <div class="meta">${d > 0 ? 'saves ' + d.toFixed(2) + ' km/s' : 'costs ' + (-d).toFixed(2) + ' km/s more'} · leave ${isoOf(r.fly.launch_mjd2000 + 2451544.5)} · ${Math.round(r.fly.tof_days)} days${r.flyPath ? (r.flyPath.estimated ? ' · flyby dates estimated' : '') : ' · path not drawn'}</div>
+        <div class="list"><button type="button" data-hl="${r.key}~" aria-pressed="${state.hl === r.key + '~'}">Highlight</button><button type="button" data-sling="${r.key}" ${r.flyPath ? '' : 'disabled'}>Launch on slingshot</button></div></div>`;
+    }
+    return `<div class="r" style="border-left-color:#${rampColor(r.dv).getHexString()}"><div class="head"><span class="name">${first ? esc(r.name) : '<span class="meta">next window</span>'}</span><span class="vt">${r.dv.toFixed(2)} km/s</span></div>
       <div class="meta">leave ${isoOf(r.jdDep)} · ${r.tof} days${r.el ? '' : ' · no arc drawn'}</div>${flyTxt}
       <div class="list"><button type="button" data-hl="${r.key}" aria-pressed="${state.hl === r.key}">Highlight</button><button type="button" data-launch="${r.key}" ${r.el ? '' : 'disabled'}>Launch a ship</button><button type="button" data-go="${r.key}">Jump to departure</button></div></div>`;
   }).join('');
   const fl = state.flights.map((f, i) => { const t = state.jd - f.jdDep; const st = t < 0 ? `departs in ${Math.ceil(-t)} days` : t <= f.tof ? `in flight, day ${Math.floor(t)} of ${f.tof}` : 'arrived'; return `<div class="meta">${esc(BY[f.from].name)} to ${esc(f.name)}: ${st}</div>`; }).join('');
-  return `<div><h2>Routes ${state.routeMode === 'to' ? 'to' : 'from'} ${esc(BY[from].name)}</h2><p class="caveat">Cheapest departure within the waiting horizon from ${isoOf(jdOfK(k))}. Δv includes the burn out of the parking orbit and into the destination's (rendezvous at small bodies); colours run from cheap (gold) to costly (red). Flyby alternatives come from the pykep search where it has run.</p></div>
+  return `<div><h2>Routes ${state.routeMode === 'to' ? 'to' : 'from'} ${esc(BY[from].name)}</h2><p class="caveat">Every launch window between ${isoOf(jdOfK(k))} and ${isoOf(jdOfK(k + state.H))}, each at its cheapest departure date; ${routeList.length} windows to ${new Set(routeList.map(r => r.site)).size} sites. Windows more than 3 km/s above a destination's best are left out. Dashed cyan paths are slingshot routes from the pykep flyby search, with a ring at each flyby planet; they exist so far for routes from Earth to Jupiter, Ceres, Vesta and Psyche. Δv includes the burn out of the parking orbit and into the destination's (rendezvous at small bodies); colours run from cheap (gold) to costly (red). Flyby alternatives come from the pykep search where it has run.</p></div>
     ${state.flights.length ? `<div><h3>Your ships</h3>${fl}<p class="caveat">Press play (1 hour or 6 hours per frame works well) to watch them fly.</p></div>` : ''}
     <div class="res">${rows}</div>
     <p class="caveat">Costs: ${esc(NET.meta.ephemeris || '')}. ${esc(NET.meta.method)}</p>`;
@@ -485,11 +589,13 @@ function bindRoutes() {
   const P = $('panel');
   P.querySelectorAll('[data-hl]').forEach(b => b.addEventListener('click', () => { state.hl = state.hl === b.dataset.hl ? null : b.dataset.hl; routeKey = ''; updateRoutes(); renderPanel(); }));
   P.querySelectorAll('[data-launch]').forEach(b => b.addEventListener('click', () => { const r = routeList.find(x => x.key === b.dataset.launch); if (r) launch(r); }));
+  P.querySelectorAll('[data-sling]').forEach(b => b.addEventListener('click', () => { const r = routeList.find(x => x.key === b.dataset.sling); if (r) launchSling(r); }));
   P.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const r = routeList.find(x => x.key === b.dataset.go); if (r) setJD(r.jdDep); }));
 }
 $('routeFrom').innerHTML = '<option value="">none</option>' + NET.nodes.map(n => `<option value="${n.id}">${esc(n.name)}</option>`).join('');
 $('routeFrom').addEventListener('change', e => { state.routeFrom = e.target.value; state.hl = null; routeKey = ''; updateRoutes(); if (!state.sel) renderPanel(); });
 $('horizon').addEventListener('change', e => { state.H = +e.target.value; routeKey = ''; updateRoutes(); });
+$('sling').addEventListener('change', e => { state.sling = e.target.checked; routeKey = ''; updateRoutes(); if (!state.sel) renderPanel(); });
 $('routeMode').addEventListener('change', e => { state.routeMode = e.target.value; state.hl = null; routeKey = ''; updateRoutes(); if (!state.sel) renderPanel(); });
 
 /* ---------- controls ---------- */
