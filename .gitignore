@@ -12,3 +12,4 @@ flyby/*.log
 network/network.json
 surrogate/*.npz
 surrogate/*.pt
+atlas3d/solar-system-3d.html
