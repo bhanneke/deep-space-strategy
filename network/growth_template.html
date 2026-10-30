@@ -106,6 +106,15 @@ tr[data-route]:hover td{background:var(--deck-2)}
 </section>
 
 <section class="sec">
+  <h2>Slingshots: flyby routes from Earth</h2>
+  <p class="caveat">Best flyby route against the direct route, per two-year launch window, from low Earth orbit. Flyby sequences use one deep-space manoeuvre per leg and up to two flybys of Venus, Earth, Mars or Jupiter, optimised with ESA pykep and pygmo. Planet positions end in 2050, so routes in late windows must arrive by then.</p>
+  <div class="grp"><span class="lbl">Target</span><select id="fbTarget" aria-label="Flyby target"></select></div>
+  <div class="legend"><span><i style="border-top-color:var(--s2)"></i>direct</span><span><i style="border-top-color:var(--s1)"></i>best flyby route</span></div>
+  <div class="chart" id="fbChart"></div>
+  <div class="tablewrap"><table id="fbTable"></table></div>
+</section>
+
+<section class="sec">
   <h2>Strongholds: propellant leverage</h2>
   <p class="caveat">A hub with local water can refuel ships, so the propellant for the onward leg never leaves Earth. Leverage = average share of Earth-launched mass saved for the other sites when cargo refuels at the hub, compared with flying direct from low Earth orbit. The calendar moves the ranking.</p>
   <div class="legend" id="hubLegend"></div>
@@ -128,6 +137,7 @@ tr[data-route]:hover td{background:var(--deck-2)}
 <script id="d-atlas" type="application/json">/*ATLAS*/</script>
 <script id="d-net" type="application/json">/*NET*/</script>
 <script id="d-stn" type="application/json">/*STN*/</script>
+<script id="d-fb" type="application/json">/*FLYBY*/</script>
 <script>
 const E = window.NetEngine;
 const ATLAS = JSON.parse(document.getElementById('d-atlas').textContent);
@@ -332,11 +342,51 @@ function renderStations() {
   }).join('')}</tbody>`;
   $('stnTable').querySelectorAll('[data-stn]').forEach(tr => tr.addEventListener('click', () => { const r = R[+tr.dataset.stn]; state.stn = state.stn === r ? null : r; renderStations(); draw(); }));
 }
+/* ---- slingshots ---- */
+const FB = JSON.parse(document.getElementById('d-fb').textContent);
+const FB_AB = { earth: 'E', venus: 'V', mars: 'Ma', jupiter: 'J', saturn: 'S', mercury: 'Me', ceres: 'C', vesta: 'Ve', psyche: 'P' };
+const FB_NAME = { jupiter: 'Jupiter', saturn: 'Saturn', mercury: 'Mercury', ceres: 'Ceres', vesta: 'Vesta', psyche: 'Psyche' };
+function fbRows(target) {
+  const bins = [...new Set(FB.filter(r => r.target === target).map(r => r.bin))];
+  return bins.map(bin => {
+    const rs = FB.filter(r => r.target === target && r.bin === bin);
+    const direct = rs.find(r => r.seq.length === 2), best = rs.filter(r => r.feasible).sort((a, b) => a.dv - b.dv)[0];
+    return { bin, direct, best };
+  });
+}
+function renderFlyby() {
+  const tgt = $('fbTarget').value, rows = fbRows(tgt);
+  const W0 = 1000, H0 = 300, L = 70, R = 30, T = 18, B = 40;
+  const vals = rows.flatMap(r => [r.direct, r.best]).filter(r => r && r.feasible).map(r => r.dv);
+  const ymax = Math.ceil(Math.max(...vals) / 2) * 2, ymin = Math.max(0, Math.floor(Math.min(...vals) / 2) * 2 - 2);
+  const X = i => L + (i + 0.5) / rows.length * (W0 - L - R), Y = v => T + (1 - (v - ymin) / (ymax - ymin)) * (H0 - T - B);
+  let svg = `<svg viewBox="0 0 ${W0} ${H0}" role="img" aria-label="Direct and best flyby delta-v to ${FB_NAME[tgt]} by launch window">`;
+  for (let v = ymin; v <= ymax; v += 2) svg += `<line x1="${L}" x2="${W0 - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="${css('--grid')}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="12" fill="${css('--dim')}" font-family="${css('--f-mono')}">${v}</text>`;
+  svg += `<text x="${L}" y="${T - 4}" font-size="12" fill="${css('--dim')}">total Δv from low Earth orbit, km/s</text>`;
+  rows.forEach((r, i) => {
+    const x = X(i);
+    svg += `<text x="${x}" y="${H0 - 14}" text-anchor="middle" font-size="12" fill="${css('--dim')}" font-family="${css('--f-mono')}">${r.bin.slice(0, 4)}</text>`;
+    const d = r.direct && r.direct.feasible ? r.direct.dv : null, b = r.best ? r.best.dv : null;
+    if (d != null && b != null) svg += `<line x1="${x}" x2="${x}" y1="${Y(d)}" y2="${Y(b)}" stroke="${css('--rule')}" stroke-width="2"/>`;
+    if (d != null) svg += `<circle cx="${x}" cy="${Y(d)}" r="5" fill="${css('--s2')}" stroke="${css('--deck')}" stroke-width="2"><title>${r.bin} direct ${d.toFixed(2)} km/s</title></circle>`;
+    if (b != null) svg += `<circle cx="${x}" cy="${Y(b)}" r="5" fill="${css('--s1')}" stroke="${css('--deck')}" stroke-width="2"><title>${r.bin} ${r.best.seq.map(s => FB_AB[s]).join('-')} ${b.toFixed(2)} km/s</title></circle>`;
+  });
+  $('fbChart').innerHTML = svg + '</svg>';
+  $('fbTable').innerHTML = `<thead><tr><th>Launch window</th><th>Direct, km/s</th><th>Days</th><th>Best route</th><th>Δv, km/s</th><th>Days</th><th>Saving, km/s</th></tr></thead><tbody>${rows.map(r => {
+    const d = r.direct && r.direct.feasible ? r.direct : null, b = r.best;
+    return `<tr><td class="num">${r.bin}</td><td class="num">${d ? d.dv.toFixed(2) : 'after 2050'}</td><td class="num">${d ? Math.round(d.tof_days) : '–'}</td><td>${b ? b.seq.map(s => FB_AB[s]).join('-') : '–'}</td><td class="num">${b ? b.dv.toFixed(2) : '–'}</td><td class="num">${b ? Math.round(b.tof_days) : '–'}</td><td class="num">${d && b ? (d.dv - b.dv).toFixed(2) : '–'}</td></tr>`;
+  }).join('')}</tbody>`;
+}
+$('fbTarget').innerHTML = Object.entries(FB_NAME).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+$('fbTarget').addEventListener('change', renderFlyby);
+renderFlyby();
+
 $('assume').innerHTML = [
   `Positions: JPL "Approximate Positions of the Planets" (Table 1, valid 1800–2050) for planets; JPL Small-Body Database elements with two-body motion for Ceres, Vesta, Psyche, Eros, Bennu and Ryugu. Arrivals after 2050 use the table outside its stated validity.`,
   `Transfers: ${esc(NET.meta.method)}`,
   `Parking orbits: ${NODES.map(n => `${esc(n.name)}: ${esc(n.park)}`).join('; ')}. GM values from NASA NSSDC fact sheets.`,
-  `Gas giants: arrival means capture into a circular orbit at Callisto (Jupiter) or Titan (Saturn) distance, a modelling choice. Real missions use gravity assists and aerocapture, which this model leaves out, so outer-system costs here are upper bounds.`,
+  `Gas giants: arrival means capture into a circular orbit at Callisto (Jupiter) or Titan (Saturn) distance, a modelling choice. The network routes above are direct; the Slingshots section adds flyby routes from Earth. Aerocapture is not modelled, so arrival costs are upper bounds.`,
+  `Flyby routes: ESA pykep 3.0.0 MGA-1DSM (one deep-space manoeuvre per leg), up to two flybys, optimised with pygmo self-adaptive differential evolution (8 islands, two independent starts per problem). Same departure burn and capture orbits as the direct network. Leg flight times are capped at 1.9 times the Hohmann time, so some direct costs (Ceres, Saturn) sit on that cap and are slightly overstated. Validation: the same tools reproduce the real Cassini launch and Venus–Venus–Earth flyby dates within 9 to 34 days.`,
   `Hub leverage: Earth-launched mass per kg delivered is exp(Δv/vₑ) for the leg flown on Earth propellant. Via a hub, only the leg to the hub uses Earth propellant; the onward leg uses hub propellant. Leverage counts a destination only where reaching the hub is cheaper than flying direct and the onward leg from the hub is cheaper than the direct flight from low Earth orbit, which excludes detours. It ignores dry mass, tankage, the time spent at the hub and the cost of building the plant. "Local propellant" shows how much the hub must make per kg delivered, including lifting it from the surface to the depot.`,
   `Earth–Moon L1 departures: derived patched-conic estimate, the cheaper of a burn at L1 and a drop to a 300 km perigee (about 0.64 km/s) followed by a perigee burn. Lunar flybys, which real missions use, would do slightly better.`,
   `Station search: ${esc(STN.meta.method)}`,
