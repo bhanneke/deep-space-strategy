@@ -6,6 +6,13 @@ PLANETS = ('mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn')
 NAIF = {'mercury': 'MERCURY BARYCENTER', 'venus': 'VENUS BARYCENTER', 'earth': 'EARTH BARYCENTER',
         'mars': 'MARS BARYCENTER', 'jupiter': 'JUPITER BARYCENTER', 'saturn': 'SATURN BARYCENTER'}
 
+_DE_CACHE = {}
+def _de440(name):
+    """One DE440 object per planet and process: the SPICE kernel loads once per worker, not on every hand-over."""
+    if name not in _DE_CACHE:
+        _DE_CACHE[name] = pk.udpla.de440s(NAIF[name], 'ECLIPJ2000', 'SUN')
+    return _DE_CACHE[name]
+
 class DE440Planet:
     """Heliocentric DE440 positions with the physical constants that flybys need.
 
@@ -24,7 +31,7 @@ class DE440Planet:
         return state
     def eph(self, mjd2000):
         if self.de is None:
-            self.de = pk.udpla.de440s(NAIF[self.name], 'ECLIPJ2000', 'SUN')   # loads the kernel in this process
+            self.de = _de440(self.name)
         return self.de.eph(mjd2000)
     def get_name(self):
         return self.name

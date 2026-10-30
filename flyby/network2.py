@@ -16,7 +16,7 @@ PARK_LABEL = {'earth': 'low Earth orbit, 300 km', 'mars': 'low Mars orbit, 300 k
               'mercury': 'low Mercury orbit, 200 km', 'jupiter': 'circular orbit at Callisto distance',
               'saturn': 'circular orbit at Titan distance', 'ceres': 'low Ceres orbit, 50 km'}
 JD0 = 2461345.5                          # 2026-11-01
-JD1 = 2488433.5                          # 2099-01-01
+JD1 = 2488433.5                          # 2100-12-31
 STEP, TOFS = 10, 30
 K2 = 2.9591220828e-4
 
