@@ -80,7 +80,12 @@ def solve(seq, t0, islands, gens, pop, evolves, seed):
     x, f = best.champion_x, best.champion_f[0]
     n = len(seq) - 1
     tofs = [x[5]] + [x[9 + 4 * (i - 1)] for i in range(1, n)]
+    # encounter epochs (MJD2000) let the pages draw the flyby path leg by leg; x is the full MGA-1DSM decision vector
+    enc = [float(x[0])]
+    for d in tofs:
+        enc.append(enc[-1] + float(d))
     return {'seq': seq, 'dv': round(float(f), 3), 'launch_mjd2000': round(float(x[0]), 1),
+            'encounters_mjd2000': [round(e, 2) for e in enc], 'x': [float(v) for v in x],
             'vinf_dep': round(float(x[3]) / 1000, 3), 'dep_burn': round(park_burn(x[3] / 1000, seq[0]), 3),
             'tof_days': round(float(sum(tofs)), 1), 'arrival_mjd2000': round(float(x[0] + sum(tofs)), 1)}
 
