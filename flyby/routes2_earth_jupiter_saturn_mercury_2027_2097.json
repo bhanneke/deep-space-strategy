@@ -5230,5 +5230,114 @@
   "bin": "2049-2050",
   "feasible": true,
   "seconds": 47.1
+ },
+ {
+  "seq": [
+   "earth",
+   "saturn"
+  ],
+  "dv": 12.005,
+  "launch_mjd2000": 19189.8,
+  "vinf_dep": 9.0,
+  "dep_burn": 6.43,
+  "tof_days": 4000.0,
+  "arrival_mjd2000": 23189.8,
+  "origin": "earth",
+  "target": "saturn",
+  "bin": "2051-2052",
+  "feasible": true,
+  "seconds": 3.1
+ },
+ {
+  "seq": [
+   "earth",
+   "jupiter",
+   "saturn"
+  ],
+  "dv": 9.695,
+  "launch_mjd2000": 19359.0,
+  "vinf_dep": 8.745,
+  "dep_burn": 6.269,
+  "tof_days": 3813.7,
+  "arrival_mjd2000": 23172.7,
+  "origin": "earth",
+  "target": "saturn",
+  "bin": "2051-2052",
+  "feasible": true,
+  "seconds": 33.5
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "saturn"
+  ],
+  "dv": 14.405,
+  "launch_mjd2000": 19041.7,
+  "vinf_dep": 4.499,
+  "dep_burn": 4.09,
+  "tof_days": 4106.3,
+  "arrival_mjd2000": 23148.1,
+  "origin": "earth",
+  "target": "saturn",
+  "bin": "2051-2052",
+  "feasible": true,
+  "seconds": 35.5
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "saturn"
+  ],
+  "dv": 10.518,
+  "launch_mjd2000": 18874.5,
+  "vinf_dep": 5.168,
+  "dep_burn": 4.361,
+  "tof_days": 4676.6,
+  "arrival_mjd2000": 23551.2,
+  "origin": "earth",
+  "target": "saturn",
+  "bin": "2051-2052",
+  "feasible": true,
+  "seconds": 30.4
+ },
+ {
+  "seq": [
+   "earth",
+   "venus",
+   "jupiter",
+   "saturn"
+  ],
+  "dv": 12.697,
+  "launch_mjd2000": 19126.5,
+  "vinf_dep": 4.406,
+  "dep_burn": 4.055,
+  "tof_days": 4637.3,
+  "arrival_mjd2000": 23763.8,
+  "origin": "earth",
+  "target": "saturn",
+  "bin": "2051-2052",
+  "feasible": true,
+  "seconds": 59.3
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "jupiter",
+   "saturn"
+  ],
+  "dv": 8.144,
+  "launch_mjd2000": 19066.8,
+  "vinf_dep": 5.096,
+  "dep_burn": 4.33,
+  "tof_days": 4980.4,
+  "arrival_mjd2000": 24047.1,
+  "origin": "earth",
+  "target": "saturn",
+  "bin": "2051-2052",
+  "feasible": true,
+  "seconds": 56.8
  }
 ]

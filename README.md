@@ -1,8 +1,8 @@
-# solmaps: the engine of Deep Space Strategy
+# Deep Space Strategy (engine: solmaps)
 
 Deep Space Strategy studies strategy for a settled solar system in five modules: Geography, Resources, Topology, Infrastructure and Strategy. solmaps is its open map and route engine: a queryable timetable of routes through the solar system, and the strategy analysis built on it.
 
-solmaps computes transfer costs between solar-system sites for every departure date, ranks propellant hubs by how much Earth-launched mass they save, and searches for depot orbits around the Sun. The technical documentation (concept, formulas, references) is at https://bhanneke.github.io/solmaps/technical.html.
+solmaps computes transfer costs between solar-system sites for every departure date, ranks propellant hubs by how much Earth-launched mass they save, and searches for depot orbits around the Sun. The technical documentation (concept, formulas, references) is at https://bhanneke.github.io/deep-space-strategy/technical.html.
 
 ## Contents
 
@@ -16,7 +16,7 @@ solmaps computes transfer costs between solar-system sites for every departure d
 | `surrogate/` | Route dataset generator and the first learned surrogate (PyTorch, separate container) |
 | `site/` | Landing page, documentation and `build_site.py`, which writes the public site into `docs/` for GitHub Pages |
 
-The public site and its documentation ("How solmaps works") live at https://bhanneke.github.io/solmaps/. The site is an experimental research prototype.
+The public site and its documentation ("How solmaps works") live at https://bhanneke.github.io/deep-space-strategy/. The site is an experimental research prototype.
 
 ## Rebuild
 

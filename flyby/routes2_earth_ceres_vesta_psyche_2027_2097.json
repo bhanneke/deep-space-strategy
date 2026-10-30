@@ -8062,5 +8062,149 @@
   "bin": "2087-2088",
   "feasible": true,
   "seconds": 27.9
+ },
+ {
+  "seq": [
+   "earth",
+   "psyche"
+  ],
+  "dv": 9.644,
+  "launch_mjd2000": 33112.1,
+  "vinf_dep": 7.025,
+  "dep_burn": 5.264,
+  "tof_days": 903.1,
+  "arrival_mjd2000": 34015.2,
+  "origin": "earth",
+  "target": "psyche",
+  "bin": "2089-2090",
+  "feasible": true,
+  "seconds": 1.8
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "psyche"
+  ],
+  "dv": 9.556,
+  "launch_mjd2000": 33233.2,
+  "vinf_dep": 3.181,
+  "dep_burn": 3.654,
+  "tof_days": 1555.6,
+  "arrival_mjd2000": 34788.8,
+  "origin": "earth",
+  "target": "psyche",
+  "bin": "2089-2090",
+  "feasible": true,
+  "seconds": 28.7
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "psyche"
+  ],
+  "dv": 10.197,
+  "launch_mjd2000": 33217.2,
+  "vinf_dep": 5.501,
+  "dep_burn": 4.507,
+  "tof_days": 1358.4,
+  "arrival_mjd2000": 34575.6,
+  "origin": "earth",
+  "target": "psyche",
+  "bin": "2089-2090",
+  "feasible": true,
+  "seconds": 19.0
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "mars",
+   "psyche"
+  ],
+  "dv": 9.692,
+  "launch_mjd2000": 32809.5,
+  "vinf_dep": 4.162,
+  "dep_burn": 3.966,
+  "tof_days": 1796.3,
+  "arrival_mjd2000": 34605.7,
+  "origin": "earth",
+  "target": "psyche",
+  "bin": "2089-2090",
+  "feasible": true,
+  "seconds": 50.1
+ },
+ {
+  "seq": [
+   "earth",
+   "psyche"
+  ],
+  "dv": 10.074,
+  "launch_mjd2000": 33544.7,
+  "vinf_dep": 6.749,
+  "dep_burn": 5.117,
+  "tof_days": 752.9,
+  "arrival_mjd2000": 34297.5,
+  "origin": "earth",
+  "target": "psyche",
+  "bin": "2091-2092",
+  "feasible": true,
+  "seconds": 1.1
+ },
+ {
+  "seq": [
+   "earth",
+   "mars",
+   "psyche"
+  ],
+  "dv": 9.664,
+  "launch_mjd2000": 33238.0,
+  "vinf_dep": 3.207,
+  "dep_burn": 3.661,
+  "tof_days": 1503.6,
+  "arrival_mjd2000": 34741.6,
+  "origin": "earth",
+  "target": "psyche",
+  "bin": "2091-2092",
+  "feasible": true,
+  "seconds": 16.4
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "psyche"
+  ],
+  "dv": 10.18,
+  "launch_mjd2000": 33238.9,
+  "vinf_dep": 5.118,
+  "dep_burn": 4.34,
+  "tof_days": 1311.0,
+  "arrival_mjd2000": 34549.9,
+  "origin": "earth",
+  "target": "psyche",
+  "bin": "2091-2092",
+  "feasible": true,
+  "seconds": 3.6
+ },
+ {
+  "seq": [
+   "earth",
+   "earth",
+   "mars",
+   "psyche"
+  ],
+  "dv": 14.174,
+  "launch_mjd2000": 33295.7,
+  "vinf_dep": 1.178,
+  "dep_burn": 3.264,
+  "tof_days": 2134.7,
+  "arrival_mjd2000": 35430.4,
+  "origin": "earth",
+  "target": "psyche",
+  "bin": "2091-2092",
+  "feasible": true,
+  "seconds": 1.3
  }
 ]
