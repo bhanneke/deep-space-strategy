@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>
 <title>Deep Space Strategy</title>
-<meta name="description" content="Research and open debate on how humanity settles the solar system, built on open data and physics: where the resources are, what it costs to reach them, and who holds the strong positions.">
+<meta name="description" content="Deep Space Strategy studies where humanity should build in the solar system, and in which order.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
@@ -8,83 +8,36 @@
 <style>
 .hero{display:flex;flex-direction:column;gap:14px;padding:28px 0 6px}
 .hero h1{font-size:60px}
-.hero .lede{font-size:23px;color:var(--ink);max-width:30ch;line-height:1.35}
-.premise{border-left:3px solid var(--sun);padding:4px 0 4px 14px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.stat{background:var(--deck);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;text-decoration:none;color:var(--ink)}
-.stat:hover{border-color:var(--sun)}
-.stat b{font-family:var(--f-display);font-size:40px;line-height:1;color:var(--sun);font-variant-numeric:tabular-nums}
-.stat span{font-size:14.5px;line-height:1.45;color:var(--ink)}
-.stat small{font-size:12.5px;color:var(--dim)}
-.thesis{font-size:19px;line-height:1.5;max-width:60ch}
-.qs{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
-.qs li{background:var(--deck);border:1px solid var(--rule);border-left:3px solid var(--sun);border-radius:0 8px 8px 0;padding:12px 14px;font-size:15.5px;max-width:none}
-.qs li a{display:block;margin-top:6px;font-size:13.5px}
-.mod{display:grid;grid-template-columns:150px 1fr;gap:6px 18px;padding:14px 0;border-top:1px solid var(--rule)}
-.mod h3{font-family:var(--f-display);font-size:22px;letter-spacing:.05em;text-transform:uppercase;color:var(--sun);margin:0}
-.mod p{color:var(--dim);font-size:15px}
-.mod .links{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:15px}
-.mod .planned{color:var(--dim);font-style:italic}
-.next{margin:0;padding-left:20px}
-.next li{margin-bottom:6px}
-.ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-@media (max-width:560px){.mod{grid-template-columns:1fr}.hero h1{font-size:44px}.hero .lede{font-size:20px}}
+.hero .lede{font-size:23px;color:var(--ink);max-width:32ch;line-height:1.35}
+.area{display:grid;grid-template-columns:190px 1fr;gap:4px 18px;padding:12px 0;border-top:1px solid var(--rule)}
+.area h3{font-family:var(--f-display);font-size:21px;letter-spacing:.04em;text-transform:uppercase;color:var(--sun);margin:0}
+.area p{font-size:15.5px}
+.area .links{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14.5px;margin-top:4px}
+.area .soon{color:var(--dim);font-size:14px;margin-top:4px}
+@media (max-width:560px){.area{grid-template-columns:1fr}.hero h1{font-size:44px}.hero .lede{font-size:20px}}
 </style>
 <main>
   <div class="hero">
     <h1>Deep Space Strategy</h1>
-    <p class="lede">Research and open debate on how humanity settles the solar system.</p>
-    <p class="premise">Humanity, in this work, includes the AI systems people build. Beyond the Moon, light-lag rules out control from Earth: a signal needs 3 to 22 minutes to Mars and over half an hour to the asteroid belt. Autonomous machines will scout, mine and build long before crews arrive, so every strategy here plans for human and artificial agents as one civilisation.</p>
+    <p class="lede">We study where humanity should build in the solar system, and in which order.</p>
+    <p>Deep Space Strategy is a primer for settling the solar system, based on evidence.</p>
   </div>
 
-  <h2>What the numbers already show</h2>
-  <p>solmaps, the open engine behind this site, has computed 10.7 million transfers: 132 routes between 12 sites, for every tenth day from November 2026 to 2100.</p>
-  <div class="stats">
-    <a class="stat" href="growth-map.html"><b>57–90%</b><span>less mass launched from Earth for missions beyond the Moon, once a depot at Earth–Moon L1 runs on lunar ice.</span><small>Hydrogen/oxygen engines, averaged over destinations, 2026–2100</small></a>
-    <a class="stat" href="solar-system-3d.html"><b>2.3 km/s</b><span>moves a ship from Ceres to Vesta in the best window, less than the burn that sends it from low Earth orbit toward Mars. On a median date the same trip costs 6.5 km/s.</span><small>Best window 2026–2100, both ends included</small></a>
-    <a class="stat" href="growth-map.html"><b>4.5 km/s</b><span>saved on the way to Saturn by a Jupiter flyby; a Mars flyby saves up to 3.1 km/s on the way to Vesta.</span><small>Global flyby search, 2027–2098, against the direct route in the same window</small></a>
-    <a class="stat" href="technical.html#windows"><b>26 months</b><span>between Earth–Mars windows. In a window the trip costs 5.7 to 6.3 km/s; between windows up to 33 km/s.</span><small>DE440 network, 2026–2041</small></a>
-  </div>
+  <h2>Contents</h2>
+  <div class="area"><h3>Settlement</h3><div><p>Where the first bases and stations should go, and what comes after them.</p><p class="links"><a href="growth-map.html">Growth map</a></p></div></div>
+  <div class="area"><h3>Resources and energy</h3><div><p>Where water and metals are. Which energy sources each step needs, from solar power to fusion.</p><p class="links"><a href="atlas.html">Resource atlas</a></p></div></div>
+  <div class="area"><h3>Transport</h3><div><p>How ships travel between the planets, and where they refuel.</p><p class="links"><a href="solar-system-3d.html">3D atlas</a><a href="growth-map.html">Growth map</a></p></div></div>
+  <div class="area"><h3>Machines and AI</h3><div><p>What autonomous systems build before people arrive.</p><p class="soon">In preparation</p></div></div>
+  <div class="area"><h3>Cooperation and law</h3><div><p>Shared infrastructure and the rules for using it.</p><p class="soon">In preparation</p></div></div>
+  <div class="area"><h3>Competition and conflict</h3><div><p>Competition between states and companies, and how to prevent armed conflict.</p><p class="soon">In preparation</p></div></div>
+  <div class="area"><h3>Simulation</h3><div><p>Computer simulations in which many actors pursue different strategies.</p><p class="soon">In preparation</p></div></div>
 
-  <h2>Working thesis</h2>
-  <p class="thesis">Settling the solar system is a logistics problem on a moving network. Whoever makes propellant at the right places and holds the cheap orbits sets the terms of access for everyone who follows. Technology shifts those positions: each step in propulsion, in-space resource use and autonomy redraws the map, and strategy has to anticipate the next map.</p>
+  <h2>Method</h2>
+  <p>The maps and route tools run on solmaps, our open-source engine. <a href="how-it-works.html">How solmaps works</a> gives an overview; the <a href="technical.html">technical documentation</a> gives the formulas and references.</p>
+  <p>The route calculations use the standard methods of early mission planning. They match the launch and flyby dates of the Cassini, Juno, Galileo and Dawn missions to within days or weeks.</p>
 
-  <h2>Open questions</h2>
-  <ul class="qs">
-    <li>Where should the first stations sit, and which orbits gain value as technology advances?<a href="technical.html#limits">Station positioning</a></li>
-    <li>Which propellant sources change the map first: lunar ice, water asteroids, Mars or Ceres?<a href="growth-map.html">Hub leverage in the growth map</a></li>
-    <li>How does each step on the technology frontier, from chemical to nuclear and electric propulsion, reorder the strongholds?<a href="technical.html#hubs">Hubs and the rocket equation</a></li>
-    <li>Which tasks should autonomous AI systems take on where light-lag rules out control from Earth?<a href="technical.html#grounding">Scientific grounding</a></li>
-    <li>Which routes and nodes become chokepoints, and who governs them under the Outer Space Treaty and the Artemis Accords?<a href="technical.html#measures">Strategy measures</a></li>
-  </ul>
-
-  <h2>The evidence base</h2>
-  <div class="mod"><h3>Geography</h3><div><p>Where every site is, how it moves, and how far it lies in light-time and gravity well.</p><div class="links"><a href="solar-system-3d.html">3D atlas</a></div></div></div>
-  <div class="mod"><h3>Resources</h3><div><p>Water, metals, life-support elements and energy at each site, with evidence level and source.</p><div class="links"><a href="atlas.html">Resource atlas</a></div></div></div>
-  <div class="mod"><h3>Topology</h3><div><p>The temporal transfer graph: route costs for every departure date, launch windows, slingshot routes and journeys.</p><div class="links"><a href="solar-system-3d.html">Routes in the 3D atlas</a><a href="growth-map.html">Growth map: routes and slingshots</a><a href="technical.html#graph">The graph, defined</a></div></div></div>
-  <div class="mod"><h3>Infrastructure</h3><div><p>Propellant hubs, depot orbits and the positioning of stations.</p><div class="links"><a href="growth-map.html">Growth map: hubs and depots</a><a href="technical.html#hubs">Hub and depot formulas</a><span class="planned">station siting (in development)</span></div></div></div>
-  <div class="mod"><h3>Strategy</h3><div><p>Build-out strategies along the technology frontier, competing actors, doctrine and governance.</p><div class="links"><a href="technical.html#measures">Strategy measures</a><a href="technical.html#grounding">Scientific grounding</a><span class="planned">strategy module (in development)</span></div></div></div>
-
-  <h2>What comes next</h2>
-  <ul class="next">
-    <li><strong>Station siting.</strong> The best orbits for stations, chosen jointly so that each station strengthens the network, recomputed for every technology level.</li>
-    <li><strong>Build-out along the technology frontier.</strong> The optimal order of stations and propellant plants as propulsion, resource use and autonomy advance.</li>
-    <li><strong>Competing actors.</strong> Several powers and companies building at once: who secures which hubs and routes first.</li>
-    <li><strong>Quantum optimisation.</strong> Station positioning as a benchmark for quantum and classical solvers.</li>
-  </ul>
-
-  <h2>Who is behind it</h2>
-  <p>Deep Space Strategy is led by Björn Hanneke, researcher in information systems and economics at Goethe University Frankfurt. His work covers digital markets, decentralised networks and their security; Deep Space Strategy applies the same questions of incentives, infrastructure and control to the solar system.</p>
-
-  <h2>Take part</h2>
-  <div class="ways">
-    <a class="tool" href="https://github.com/bhanneke/deep-space-strategy/issues"><strong>Raise a question</strong><span>Challenge a result, propose a question or report an error in the open repository.</span></a>
-    <a class="tool" href="https://github.com/bhanneke/deep-space-strategy"><strong>Use the data</strong><span>Code under MIT, data and documentation under CC BY 4.0: reuse them and cite solmaps.</span></a>
-    <a class="tool" href="technical.html"><strong>Check the math</strong><span>Every definition, formula, validation and reference behind the numbers.</span></a>
-  </div>
-
-  <p class="exp"><strong>Experimental research prototype.</strong> The models simplify the physics (two-body orbits, impulsive burns, patched conics) and parts of the resource data rest on secondary sources. The numbers support comparisons between places, routes and dates. They are not mission designs.</p>
-  <p class="foot">Deep Space Strategy · Code (MIT) and data (CC BY 4.0) at <a href="https://github.com/bhanneke/deep-space-strategy">github.com/bhanneke/deep-space-strategy</a>.</p>
+  <h2>About</h2>
+  <p>Björn Hanneke, information systems researcher at Goethe University Frankfurt, leads Deep Space Strategy. You can send questions and corrections through the <a href="https://github.com/bhanneke/deep-space-strategy/issues">GitHub repository</a>. The code is open under MIT, the data and texts under CC BY 4.0.</p>
 </main>
 
 </body></html>
