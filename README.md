@@ -14,17 +14,26 @@ solmaps computes transfer costs between solar-system sites for every departure d
 | `flyby/` | DE440 bodies, the Python direct network to 2100, the flyby search (Earth and Mars origins), cycler metric, mission validation |
 | `atlas3d/` | The 3D atlas with transfer arcs and launchable ships |
 | `surrogate/` | Route dataset generator and the first learned surrogate (PyTorch, separate container) |
+| `engine/` | Routing engine: end-state conventions, transfer alternatives, ships, journeys, low thrust, refinement cache, comparison service (`docs/ENGINE.md`) |
+| `tests/` | Test suite (`make test`) |
 | `site/` | Landing page, documentation and `build_site.py`, which writes the public site into `docs/` for GitHub Pages |
 
 The public site and its documentation ("How solmaps works") live at https://bhanneke.github.io/deep-space-strategy/. The site is an experimental research prototype.
 
-## Rebuild
+## Build from a fresh checkout
+
+Needs Docker, Python 3 and Node. All orbital computation runs in the pinned container (`env/Dockerfile`).
 
 ```sh
-cd atlas && python3 build.py
-cd ../network && node validate.js && node compute.js && node stations.js && python3 build.py
-docker build -t solmaps-env env/
+make image   # build the container
+make data    # direct network to 2100 and transfer alternatives
+make test    # test suite
+make serve   # ship comparison page at http://localhost:8077/
+make site    # public pages into docs/
 ```
+
+The routing engine (`engine/`: transfer alternatives, ships with mass accounting, chronological journeys, low thrust,
+comparison service) is documented in `docs/ENGINE.md`, with its assumptions, checks and limits.
 
 ## Status
 

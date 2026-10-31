@@ -26,9 +26,9 @@ from engine.ship import G0
 
 MU_SUN = 1.32712440018e20            # m^3/s^2
 # The zero-order-hold problem needs a non-zero range for the excess speeds at both ends (a zero-width bound leaves their
-# direction variables without effect and stalls the solvers). 1e-3 in units of Earth's orbital speed allows up to about
-# 30 m/s of numerical slack; the result reports the excess speeds the solution uses.
-VINF_SLACK = 1e-3
+# direction variables without effect and stalls the solvers). 1e-4 in units of Earth's orbital speed allows up to about
+# 3 m/s of numerical slack; the result reports the excess speeds the solution uses.
+VINF_SLACK = 1e-4
 AU = 149597870700.0
 DAY = 86400.0
 
@@ -131,7 +131,7 @@ def heliocentric(origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep=0.0, 
     """best continuous-thrust leg: Sims-Flanagan search, then zero-order-hold refinement. None if infeasible."""
     best = None
     sfs = sims_flanagan(origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep, vinf_arr, nseg, starts, seed)
-    for sf in sfs[:4]:
+    for sf in sfs:                                    # every feasible Sims-Flanagan solution seeds a refinement
         leg = zero_order_hold(sf, origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep, vinf_arr)
         if leg is not None and (best is None or leg['mf_kg'] > best['mf_kg']):
             leg['seed_sims_flanagan_fuel_kg'] = sf['fuel_kg']; best = leg
@@ -166,7 +166,9 @@ def transfer(origin, target, ship, t0_bounds, tof_bounds, vinf_dep=0.0, nseg=24,
     dv1, days1, fuel1, m1 = (0.0, 0.0, 0.0, m0) if vinf_dep > 0 else spiral(origin, ship, m0)
     leg = heliocentric(origin, target, ship, m1, t0_bounds, tof_bounds, vinf_dep, 0.0, nseg, starts, seed)
     if leg is None:
-        return {'feasible': False, 'reason': 'no feasible heliocentric leg in the window'}
+        return {'feasible': False, 'reason': 'no feasible heliocentric leg in the window',
+                'phases': [{'phase': f'departure spiral from {end_state(origin)["label"]}', 'kind': 'planet-side', 'dv_kms': dv1,
+                            'days': days1, 'fuel_kg': fuel1}]}
     dv3, days3, fuel3, m3 = spiral(target, ship, leg['mf_kg'])
     fuel_total = fuel1 + leg['fuel_kg'] + fuel3
     feasible = fuel_total <= ship.fuel_capacity_kg + 1e-6

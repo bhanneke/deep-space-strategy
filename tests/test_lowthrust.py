@@ -26,7 +26,7 @@ def test_mass_and_throttle_consistency(leg):
     assert leg['fuel_kg'] == pytest.approx(leg['m0_kg'] - leg['mf_kg'])
     assert leg['dv_equivalent_kms'] == pytest.approx(SHIP.ve_kms * math.log(leg['m0_kg'] / leg['mf_kg']))
     assert leg['max_throttle'] <= 1 + 1e-6
-    assert leg['vinf_dep_ms'] <= 31 and leg['vinf_arr_ms'] <= 31     # numerical slack only (VINF_SLACK)
+    assert leg['vinf_dep_ms'] <= 3.1 and leg['vinf_arr_ms'] <= 3.1   # numerical slack only (VINF_SLACK, 3 m/s)
 
 def test_regression_earth_mars_2029(leg):
     # 40 t ship, 10 N, Isp 2,500 s, rendezvous with Mars: about 8.2 t of fuel, 5.6-5.7 km/s equivalent (2026-10-31 run)
