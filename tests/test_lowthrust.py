@@ -63,3 +63,20 @@ def test_refinement_cache_returns_the_stored_result():
     b = refine.impulsive('earth', 'mars', 2461345.5, 300)
     assert b['cached'] and b['dv_total'] == a['dv_total']
     assert a['dv_total'] <= 5.69                                                # at least as good as the 5.68 grid value
+
+def test_planet_side_burn_or_spiral():
+    """an Oberth burn when it is short against the parking-orbit period, otherwise the Edelbaum spiral"""
+    fast = Ship('fast', dry_kg=40000, payload_kg=20000, fuel_capacity_kg=40000, thrust_n=1.0e6, isp_s=10000)
+    mode, dv, days, fuel, m1 = LT.planet_side('earth', fast, fast.mass(fast.fuel_capacity_kg))
+    mu, r = 398600.4, 6378 + 300
+    assert mode == 'burn' and dv == pytest.approx(math.sqrt(2 * mu / r) - math.sqrt(mu / r), rel=1e-3)
+    mode, dv, *_ = LT.planet_side('earth', SHIP, SHIP.mass(SHIP.fuel_capacity_kg))
+    assert mode == 'spiral' and dv == pytest.approx(math.sqrt(mu / r), rel=1e-3)
+    assert LT.planet_side('101955', SHIP, 1000.0)[0] == 'none'
+
+def test_high_acceleration_ship_converges():
+    """a 2 kN, Isp 10,000 s ship (20 mm/s2): the scaled starts keep the search off escape orbits from the Sun"""
+    ship = Ship('high Isp', dry_kg=40000, payload_kg=20000, fuel_capacity_kg=40000, thrust_n=2000.0, isp_s=10000)
+    r = LT.transfer('earth', 'mars', ship, (10226, 10774), (40, 400))
+    assert r['feasible'] and r['leg']['check']['position_error_km'] < 100
+    assert r['fuel_kg'] == pytest.approx(sum(p['fuel_kg'] for p in r['phases']), rel=1e-9)

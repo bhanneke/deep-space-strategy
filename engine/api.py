@@ -26,7 +26,7 @@ def jd_of(date):
     return JD_UNIX + (d - dt.date(1970, 1, 1)).days
 
 def iso(jd):
-    return (dt.date(1970, 1, 1) + dt.timedelta(days=jd - JD_UNIX)).isoformat()
+    return (dt.date(1970, 1, 1) + dt.timedelta(days=round(jd - JD_UNIX, 6))).isoformat()   # rounding keeps a date at a bound
 
 class ShipIn(BaseModel):
     name: str
@@ -66,22 +66,41 @@ def impulsive_rows(q, ship):
                      'warnings': sorted({w for l in j['legs'] for w in l['warnings']})})
     return rows
 
+CAPS = (1.0, 0.6, 0.4, 0.25, 0.15, 0.1)   # continuous thrust: flight-time caps as shares of the time to the deadline (at least 60 days)
+
 def lowthrust_rows(q, ship):
+    """continuous-thrust alternatives: the fuel-optimal transfer under each flight-time cap, kept when no faster
+    alternative uses less fuel (Pareto on days and fuel), fastest first"""
     from engine import refine
     t0 = (jd_of(q.depart_from) - 2451544.5, jd_of(q.depart_until) - 2451544.5)
     last = jd_of(q.arrive_by) - jd_of(q.depart_until) if q.arrive_by else 1500
     if last < 60:
-        return [{'model': 'low thrust', 'feasible': False, 'reason': 'deadline leaves less than 60 days after the window'}]
-    r = refine.lowthrust_transfer(q.origin, q.destination, ship, t0, (60, last))
-    if not r.get('leg'):
-        return [{'model': 'low thrust', 'feasible': False, 'reason': r.get('reason', 'no feasible transfer')}]
-    leg = r['leg']
-    return [{'model': 'low thrust', 'feasible': r['feasible'], 'reason': r.get('reason', ''),
-             'depart': iso(r['depart_mjd2000'] + 2451544.5), 'arrive': iso(r['arrive_mjd2000'] + 2451544.5),
-             'days': round(r['arrive_mjd2000'] - r['depart_mjd2000'], 1), 'dv_total': round(sum(p['dv_kms'] for p in r['phases']), 3),
-             'fuel_loaded_kg': ship.fuel_capacity_kg, 'fuel_left_kg': round(ship.fuel_capacity_kg - r['fuel_kg'], 1),
-             'payload_delivered_kg': r['payload_delivered_kg'], 'phases': r['phases'], 'cached': r['cached'],
-             'check': leg['check'], 'vinf_slack_ms': [round(leg['vinf_dep_ms'], 1), round(leg['vinf_arr_ms'], 1)]}]
+        return [{'model': 'continuous thrust', 'feasible': False, 'reason': 'deadline leaves less than 60 days after the window'}]
+    found, reason = [], 'no feasible transfer'
+    for cap in sorted({max(60.0, round(last * c)) for c in CAPS}):
+        r = refine.lowthrust_transfer(q.origin, q.destination, ship, t0, (min(60.0, 0.5 * cap), cap))
+        if r.get('leg') and r['feasible']:
+            found.append(r)
+        else:
+            reason = r.get('reason') or reason
+    if not found:
+        return [{'model': 'continuous thrust', 'feasible': False, 'reason': reason}]
+    days = lambda r: r['arrive_mjd2000'] - r['depart_mjd2000']
+    found.sort(key=lambda r: (days(r), r['fuel_kg']))
+    front = []
+    for r in found:
+        if not front or r['fuel_kg'] < 0.995 * front[-1]['fuel_kg']:     # slower only when it saves at least 0.5% fuel
+            front.append(r)
+    rows = []
+    for r in front:
+        leg = r['leg']
+        rows.append({'model': 'continuous thrust', 'feasible': True, 'reason': '',
+                     'depart': iso(r['depart_mjd2000'] + 2451544.5), 'arrive': iso(r['arrive_mjd2000'] + 2451544.5),
+                     'days': round(days(r), 1), 'dv_total': round(sum(p['dv_kms'] for p in r['phases']), 3),
+                     'fuel_loaded_kg': ship.fuel_capacity_kg, 'fuel_left_kg': round(ship.fuel_capacity_kg - r['fuel_kg'], 1),
+                     'payload_delivered_kg': r['payload_delivered_kg'], 'phases': r['phases'], 'cached': r['cached'],
+                     'check': leg['check'], 'vinf_slack_ms': [round(leg['vinf_dep_ms'], 1), round(leg['vinf_arr_ms'], 1)]})
+    return rows
 
 @app.post('/api/compare')
 def compare(q: Query):
@@ -94,7 +113,7 @@ def compare(q: Query):
     for s in q.ships:
         ship = Ship(**s.model_dump())
         if ship.low_thrust and (q.origin == 'eml1' or q.destination == 'eml1'):
-            rows = [{'model': 'low thrust', 'feasible': False, 'reason': 'low-thrust transfers start and end at sites, not at L1'}]
+            rows = [{'model': 'continuous thrust', 'feasible': False, 'reason': 'continuous-thrust transfers start and end at sites, not at L1'}]
         else:
             rows = lowthrust_rows(q, ship) if ship.low_thrust else impulsive_rows(q, ship)
         out.append({'ship': ship.to_dict(), 'dv_capacity_kms': round(ship.dv_capacity_kms(), 3), 'results': rows})

@@ -28,9 +28,13 @@ def test_compare_impulsive_and_electric(client):
     for x in imp['results']:
         assert x['max_payload_kg'] >= x['payload_delivered_kg'] - 1
         assert x['depart'] >= '2029-01-01'
-    x = lt['results'][0]
-    assert x['model'] == 'low thrust' and [p['kind'] for p in x['phases']] == ['planet-side', 'heliocentric', 'planet-side']
-    assert x['check']['position_error_km'] < 50
+    rows = lt['results']
+    for x in rows:
+        assert x['model'] == 'continuous thrust' and [p['kind'] for p in x['phases']] == ['planet-side', 'heliocentric', 'planet-side']
+        assert x['check']['position_error_km'] < 50
+        assert x['depart'] >= '2029-01-01'               # the window bounds the departure from the parking orbit
+    for a, b in zip(rows, rows[1:]):                # alternatives: each slower option uses less fuel
+        assert a['days'] <= b['days'] and a['fuel_left_kg'] < b['fuel_left_kg']
 
 def test_bad_input_is_rejected(client):
     q = {'origin': 'earth', 'destination': 'earth', 'depart_from': '2029-01-01', 'depart_until': '2029-02-01', 'ships': []}

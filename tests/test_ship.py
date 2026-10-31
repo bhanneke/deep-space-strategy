@@ -40,3 +40,12 @@ def test_presets_are_consistent():
     for p in PRESETS.values():
         assert p.dv_capacity_kms() > 0 and p.ve_kms > 0
     assert PRESETS['solar-electric cargo'].low_thrust and not PRESETS['methalox tug'].low_thrust
+
+def test_flight_model_follows_from_thrust_and_isp():
+    """continuous thrust when a full tank takes more than a day to burn, whatever the engine is called"""
+    assert PRESETS['solar-electric cargo'].low_thrust
+    assert not any(PRESETS[k].low_thrust for k in ('methalox tug', 'hydrolox tug', 'nuclear thermal'))
+    torch = Ship('high thrust, high Isp', dry_kg=40000, payload_kg=20000, fuel_capacity_kg=40000, thrust_n=1.0e6, isp_s=10000)
+    assert torch.full_burn_s < 86400 and not torch.low_thrust
+    slow = Ship('same engine, throttled', dry_kg=40000, payload_kg=20000, fuel_capacity_kg=40000, thrust_n=2000.0, isp_s=10000)
+    assert slow.low_thrust

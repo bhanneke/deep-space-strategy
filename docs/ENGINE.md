@@ -75,19 +75,40 @@ that fits the same legs and refuels.
 The departure window covers the network dates inside it. The engine re-derives each returned itinerary burn by burn with the
 ship model and checks that fuel passes from leg to leg.
 
-## Low thrust
+## Any engine
 
-A low-thrust transfer has three phases, reported separately:
+The transfer costs in the network, the alternatives and the station data come from planet positions and Lambert's
+problem. No engine enters them. The engine enters through two numbers, exhaust speed and thrust:
 
-1. **Departure spiral.** From a parking orbit, the ship spirals out to escape. For a slow tangential spiral, the
-   velocity change equals the circular speed of the parking orbit (Edelbaum): 7.73 km/s from 300 km above Earth. Time
-   and fuel follow from thrust and mass flow. At small bodies the ship starts at rest relative to the body.
+- **Exhaust speed** (Isp × g₀) turns Δv into fuel through the rocket equation. The engine applies it per burn at query
+  time; the growth map and the station page take any Isp from 200 to 20,000 s. The station page interpolates its
+  fuel-saved score between 41 precomputed exhaust speeds from 2 to 200 km/s (largest error 0.03 percentage points).
+- **Thrust** decides the flight model. A ship that burns its full tank in less than a day (`Ship.low_thrust` false)
+  flies impulsive transfers. A ship that needs longer flies continuous-thrust legs. At each planet, the escape or
+  capture becomes one Oberth burn when it lasts at most a tenth of the parking-orbit period; otherwise the ship
+  spirals. The engine label (chemical, nuclear, electric) plays no part, so a future engine with high thrust and
+  high Isp falls into the right model by its numbers.
+
+## Continuous thrust
+
+A continuous-thrust transfer has three phases, reported separately:
+
+1. **Departure.** From a parking orbit to escape, either one Oberth burn of √(2μ/r) − √(μ/r) or a slow tangential
+   spiral, whose velocity change equals the circular speed of the parking orbit (Edelbaum): 7.73 km/s from 300 km
+   above Earth. Time and fuel follow from thrust and mass flow. At small bodies the ship starts at rest relative to
+   the body. The departure window bounds the start of this phase.
 2. **Heliocentric leg.** pykep's Sims–Flanagan transcription (`sf_pl2pl`) finds the route from several random starts.
    Its throttle profile seeds pykep's zero-order-hold model (`zoh_pl2pl`): thrust constant in magnitude and direction
    within each of 24 segments, integrated with the heyoka Taylor integrator together with the falling mass,
    dm/dt = −|T|/ve. IPOPT maximises the arrival mass subject to position, velocity and mass continuity. SLSQP stalls on
-   this problem.
-3. **Capture spiral.** The reverse spiral into the destination's parking orbit; none at small bodies.
+   this problem. The random starts scale their throttles so that the first guess spends about 10 km/s; with full
+   random throttles, a high-thrust ship starts on an escape orbit from the Sun and the propagation returns NaN.
+3. **Capture.** The reverse burn or spiral into the destination's parking orbit; none at small bodies.
+
+**Alternatives.** The comparison service solves each continuous-thrust query under up to six flight-time caps (the
+time to the deadline times 1, 0.6, 0.4, 0.25, 0.15 and 0.1, at least 60 days) and keeps the options where each slower
+one saves at least 0.5% fuel. Earth to Mars, departures in 2029, a hypothetical 100 t ship with 2 kN at Isp 10,000 s:
+156 days for 22.2 t of fuel, 231 days for 17.9 t, 274 days for 17.6 t.
 
 The zero-order-hold problem needs a non-zero range for the excess speeds at both ends. The engine allows up to
 3 m/s, which the solution uses as free velocity: about 0.1% of a typical transfer, and reported with every result.
@@ -107,6 +128,24 @@ November 2029, a 40 t ship with 10 N at Isp 2,500 s:
 The two transcriptions agree within 1% on fuel. With Sims–Flanagan alone (impulses at segment midpoints), the same
 check showed errors of 8.6 million km at 24 segments, 2.4 million km at 48 and 0.28 million km at 96. That pattern of
 discretisation error is why the engine refines in the continuous model.
+
+The check error grows with thrust at 24 segments: 1.2 km at 500 N, 16 km at 2 kN and 47 km at 5 kN for a 100 t ship
+from Earth to Mars.
+
+**One grid for all exhaust speeds?** At a fixed initial acceleration, the equivalent Δv of a heliocentric leg should
+barely depend on the exhaust speed; fuel would then follow from the rocket equation, and a grid over acceleration alone
+would serve every engine. `tests/probe_dv_vs_ve.py` tests this on Earth to Mars, 2029:
+
+| Initial acceleration | Isp 2,000 s | Isp 4,000 s | Isp 10,000 s |
+| --- | --- | --- | --- |
+| 0.25 mm/s² | 5.739 km/s | 5.731 km/s | 5.723 km/s |
+| 2 mm/s² | 6.896 km/s | 5.747 km/s | 5.815 km/s |
+| 20 mm/s² | none found | 7.140 km/s | 7.102 km/s |
+
+At low acceleration the three agree within 0.3%. At higher accelerations the optimiser ends in local optima: a ship
+with more thrust can always fly the slower ship's profile, so 7.1 km/s at 20 mm/s² against 5.7 km/s at 0.25 mm/s²
+shows a search failure. A precomputed grid would store such failures. Seeding strong engines from the impulsive
+Lambert solution comes first; the grid follows once the search finds the optimum reliably.
 
 ## Earlier review findings, checked against the code (2026-10-31)
 
@@ -141,8 +180,10 @@ The tests cover:
   exact date on request.
 - The journey search treats each heliocentric leg independently of the next. Slingshot routes are not yet edges of the
   journey graph, and planetary flybys appear only in the flyby search.
-- Low-thrust transfers cover one leg between two sites with spirals at both ends. Low-thrust ships are not part of the
-  multi-leg journey search. The spiral uses Edelbaum's formula, without eclipses or the third-body effect of the Moon.
+- Continuous-thrust transfers cover one leg between two sites. These ships are not part of the multi-leg journey
+  search. The spiral uses Edelbaum's formula, without eclipses or the third-body effect of the Moon. A ship between
+  the two planet-side regimes could save fuel with several perigee burns; the engine charges it the full spiral.
+- The continuous-thrust search ends in local optima for accelerations above about 1 mm/s² (table above).
 - No finite-burn losses for chemical ships, only the warning; no aerocapture in the engine yet (the cargo planner in
   the 3D atlas assumes it up to 6 km/s, an unsourced assumption).
 - The result list of a journey query can hold near-identical journeys 10 days apart; a thinning step would make it easier to read.

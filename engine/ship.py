@@ -14,6 +14,7 @@ import math
 
 G0 = 9.80665                          # m/s^2, standard gravity (defines Isp)
 FINITE_BURN_LIMIT = 0.1               # burn duration as share of the parking-orbit period above which a warning shows
+CONTINUOUS_LIMIT_S = 86400.0      # one day of burning: beyond this, a ship flies heliocentric legs with continuous thrust
 
 @dataclass
 class Ship:
@@ -23,7 +24,7 @@ class Ship:
     fuel_capacity_kg: float
     thrust_n: float
     isp_s: float
-    propulsion: str = 'chemical'      # 'chemical' or 'nuclear thermal' (impulsive) or 'electric' (low thrust)
+    propulsion: str = 'chemical'      # descriptive label; the flight model follows from thrust, Isp and mass (low_thrust)
 
     @property
     def ve_kms(self):
@@ -34,8 +35,15 @@ class Ship:
         return self.thrust_n / (self.isp_s * G0)
 
     @property
+    def full_burn_s(self):
+        """time to burn a full tank at full thrust"""
+        return self.fuel_capacity_kg / self.mdot_kgs if self.mdot_kgs > 0 else float('inf')
+
+    @property
     def low_thrust(self):
-        return self.propulsion == 'electric'
+        """heliocentric legs need continuous thrust when a full tank takes longer than CONTINUOUS_LIMIT_S to burn;
+        shorter burns count as impulses against flights of weeks to years"""
+        return self.full_burn_s > CONTINUOUS_LIMIT_S
 
     def mass(self, fuel_kg, payload_kg=None):
         return self.dry_kg + (self.payload_kg if payload_kg is None else payload_kg) + fuel_kg

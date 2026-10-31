@@ -74,7 +74,7 @@ $('q').onsubmit = async e => {
   const body = { origin: $('origin').value, destination: $('destination').value, depart_from: $('depart_from').value, depart_until: $('depart_until').value,
     arrive_by: $('arrive_by').value || null, max_legs: +$('max_legs').value, ships: ships(),
     refuel_at: [...$('refuel').querySelectorAll('input:checked')].map(i => i.value) };
-  $('status').textContent = 'Computing. A new electric-ship transfer takes up to a minute; repeated queries come from the cache.';
+  $('status').textContent = 'Computing. A new continuous-thrust ship needs a few minutes for up to six flight-time limits; repeated queries come from the cache.';
   const r = await fetch('api/compare', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const res = await r.json();
   if (!r.ok) { $('status').textContent = res.detail || 'The query failed.'; return; }

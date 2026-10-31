@@ -1,9 +1,10 @@
 """Low-thrust transfers with continuous thrust and changing mass (pykep Sims-Flanagan, independently checked).
 
 A low-thrust journey has three phases, kept apart in the results:
-  1. planet-side departure: from a parking orbit the ship spirals out to escape under continuous thrust. For a slow
-     tangential spiral the velocity change from a circular orbit to escape equals the circular speed (Edelbaum);
-     the phase's time and fuel follow from thrust and mass flow. At small bodies the ship starts at rest relative to
+  1. planet-side departure from a parking orbit to escape. When the escape burn lasts at most a tenth of the
+     parking-orbit period (FINITE_BURN_LIMIT), the ship makes one Oberth burn of sqrt(2 mu/r) - sqrt(mu/r). Longer
+     burns become a slow tangential spiral, whose velocity change from a circular orbit to escape equals the circular
+     speed (Edelbaum); the phase's time and fuel follow from thrust and mass flow. At small bodies the ship starts at rest relative to
      the body. Optionally a launcher or kick stage supplies a departure excess speed (vinf_dep), not paid by the ship.
   2. heliocentric leg, in two steps. Sims-Flanagan (pykep.trajopt.sf_pl2pl) finds the route quickly from several
      random starts; it replaces each segment's thrust with one impulse, which is coarse for long segments. Its throttle
@@ -11,7 +12,10 @@ A low-thrust journey has three phases, kept apart in the results:
      and direction within each segment and continuous in time, integrated with the heyoka Taylor integrator together
      with the falling mass (dm/dt = -|T|/ve). SLSQP maximises the arrival mass subject to position, velocity and mass
      continuity. The zero-order-hold solution is the model's result.
-  3. planet-side capture: the reverse spiral into the destination's parking orbit (none at small bodies).
+  3. planet-side capture: the reverse burn or spiral into the destination's parking orbit (none at small bodies).
+
+Which ships fly this model: those that need more than a day to burn a full tank (Ship.low_thrust). The model holds
+for any thrust level, so high-thrust, high-Isp engines use it as well.
 
 Independent check: the solution's thrust profile is integrated as truly continuous thrust (two-body gravity plus
 thrust, dm/dt = -|T|/ve) with scipy's DOP853 integrator, separate from pykep's propagation, and compared with the
@@ -21,8 +25,8 @@ import math, sys
 sys.path.insert(0, '/work/flyby'); sys.path.insert(0, '/work')
 import numpy as np
 
-from engine.conventions import end_state, NAMES
-from engine.ship import G0
+from engine.conventions import end_state, NAMES, parking_period_s
+from engine.ship import G0, FINITE_BURN_LIMIT
 
 MU_SUN = 1.32712440018e20            # m^3/s^2
 # The zero-order-hold problem needs a non-zero range for the excess speeds at both ends (a zero-width bound leaves their
@@ -60,8 +64,13 @@ def sims_flanagan(origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep=0.0,
     algo = pg.algorithm(pg.nlopt('slsqp'))
     algo.extract(pg.nlopt).maxeval = 1500
     found = []
+    # random starts with throttles scaled so that the first guess spends about 10 km/s: full random throttles on a
+    # high-thrust ship push it onto an escape orbit from the Sun, where the propagation returns NaN
+    scale = min(1.0, 10000.0 / (ship.thrust_n / m0 * 0.5 * (tof_bounds[0] + tof_bounds[1]) * DAY))
     for k in range(starts):
-        pop = algo.evolve(pg.population(prob, 1, seed=seed + k))
+        pop = pg.population(prob, 1, seed=seed + k)
+        x0 = np.array(pop.get_x()[0]); x0[8:-1] *= scale; pop.set_x(0, x0)
+        pop = algo.evolve(pop)
         x = pop.champion_x
         if prob.feasibility_x(x):
             found.append(list(x))
@@ -160,25 +169,40 @@ def independent_check(t0, tof_days, vdep, varr, thrust, mf, ship, m0, pls, plf):
     return {'position_error_km': float(np.linalg.norm(y[:3] - rf) / 1000), 'velocity_error_ms': float(np.linalg.norm(y[3:6] - vf)),
             'mass_error_kg': float(y[6] - mf), 'integrated_final_mass_kg': float(y[6])}
 
+def planet_side(node, ship, mass_kg):
+    """between the node's parking orbit and escape (zero excess speed): an impulsive Oberth burn when it lasts at most
+    FINITE_BURN_LIMIT of the parking-orbit period, otherwise the Edelbaum spiral.
+    Returns (mode, dv km/s, days, fuel kg, mass after kg); mode is 'burn', 'spiral' or 'none'."""
+    e = end_state(node)
+    if e['kind'] != 'parking':
+        return 'none', 0.0, 0.0, 0.0, mass_kg
+    dv = math.sqrt(2 * e['mu'] / e['r']) - math.sqrt(e['mu'] / e['r'])
+    m1 = mass_kg * math.exp(-dv / ship.ve_kms)
+    if (mass_kg - m1) / ship.mdot_kgs <= FINITE_BURN_LIMIT * parking_period_s(node):
+        return 'burn', dv, (mass_kg - m1) / ship.mdot_kgs / DAY, mass_kg - m1, m1
+    return ('spiral',) + spiral(node, ship, mass_kg)
+
 def transfer(origin, target, ship, t0_bounds, tof_bounds, vinf_dep=0.0, nseg=24, starts=8, seed=1):
     """full low-thrust transfer: departure spiral, heliocentric leg, capture spiral; mass carried through all three"""
     m0 = ship.mass(ship.fuel_capacity_kg)
-    dv1, days1, fuel1, m1 = (0.0, 0.0, 0.0, m0) if vinf_dep > 0 else spiral(origin, ship, m0)
+    mode1, dv1, days1, fuel1, m1 = ('kick', 0.0, 0.0, 0.0, m0) if vinf_dep > 0 else planet_side(origin, ship, m0)
+    # the window bounds the departure from the parking orbit; the heliocentric leg starts after the spiral
+    t0_bounds = (t0_bounds[0] + days1, t0_bounds[1] + days1)
     leg = heliocentric(origin, target, ship, m1, t0_bounds, tof_bounds, vinf_dep, 0.0, nseg, starts, seed)
     if leg is None:
         return {'feasible': False, 'reason': 'no feasible heliocentric leg in the window',
-                'phases': [{'phase': f'departure spiral from {end_state(origin)["label"]}', 'kind': 'planet-side', 'dv_kms': dv1,
+                'phases': [{'phase': f'departure {mode1} from {end_state(origin)["label"]}', 'kind': 'planet-side', 'dv_kms': dv1,
                             'days': days1, 'fuel_kg': fuel1}]}
-    dv3, days3, fuel3, m3 = spiral(target, ship, leg['mf_kg'])
+    mode3, dv3, days3, fuel3, m3 = planet_side(target, ship, leg['mf_kg'])
     fuel_total = fuel1 + leg['fuel_kg'] + fuel3
     feasible = fuel_total <= ship.fuel_capacity_kg + 1e-6
     return {'feasible': feasible, 'reason': '' if feasible else 'fuel runs out in the capture spiral',
             'phases': [
-                {'phase': f'departure spiral from {end_state(origin)["label"]}' if dv1 else ('kick stage supplies the departure' if vinf_dep else 'departure at rest relative to ' + NAMES[origin]),
+                {'phase': f'departure {mode1} from {end_state(origin)["label"]}' if dv1 else ('kick stage supplies the departure' if vinf_dep else 'departure at rest relative to ' + NAMES[origin]),
                  'kind': 'planet-side', 'dv_kms': dv1, 'days': days1, 'fuel_kg': fuel1},
                 {'phase': f'heliocentric leg {NAMES[origin]} to {NAMES[target]}', 'kind': 'heliocentric', 'dv_kms': leg['dv_equivalent_kms'],
                  'days': leg['tof_days'], 'fuel_kg': leg['fuel_kg']},
-                {'phase': f'capture spiral into {end_state(target)["label"]}' if dv3 else 'rendezvous at ' + NAMES[target],
+                {'phase': f'capture {mode3} into {end_state(target)["label"]}' if dv3 else 'rendezvous at ' + NAMES[target],
                  'kind': 'planet-side', 'dv_kms': dv3, 'days': days3, 'fuel_kg': fuel3}],
             'leg': leg, 'depart_mjd2000': leg['t0_mjd2000'] - days1, 'arrive_mjd2000': leg['t0_mjd2000'] + leg['tof_days'] + days3,
             'fuel_kg': fuel_total, 'payload_delivered_kg': ship.payload_kg if feasible else 0.0, 'final_mass_kg': m3}
