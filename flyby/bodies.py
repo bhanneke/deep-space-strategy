@@ -33,6 +33,11 @@ class DE440Planet:
         if self.de is None:
             self.de = _de440(self.name)
         return self.de.eph(mjd2000)
+    def acc(self, mjd2000):
+        """heliocentric acceleration (m/s^2): the Sun's gravity at the body; low-thrust gradients need it"""
+        r = self.eph(mjd2000)[0]
+        n = (r[0] ** 2 + r[1] ** 2 + r[2] ** 2) ** 1.5
+        return [-pk.MU_SUN * x / n for x in r]
     def get_name(self):
         return self.name
     def get_mu_central_body(self):
@@ -77,6 +82,11 @@ class HorizonsBody:
         r = [h00*a[1+k] + h10*self.h*a[4+k] + h01*b[1+k] + h11*self.h*b[4+k] for k in range(3)]
         v = [(d00*a[1+k] + d10*self.h*a[4+k] + d01*b[1+k] + d11*self.h*b[4+k]) / self.h for k in range(3)]
         return [x * AU_M for x in r], [x * AU_M / DAY_S for x in v]
+    def acc(self, mjd2000):
+        """heliocentric acceleration (m/s^2): the Sun's gravity at the body; low-thrust gradients need it"""
+        r = self.eph(mjd2000)[0]
+        n = (r[0] ** 2 + r[1] ** 2 + r[2] ** 2) ** 1.5
+        return [-pk.MU_SUN * x / n for x in r]
     def get_name(self):
         return self.name
     def get_mu_central_body(self):
