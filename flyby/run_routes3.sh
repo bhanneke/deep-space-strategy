@@ -4,5 +4,5 @@
 cd "$(dirname "$0")/.."
 for job in $1; do
   origin=${job%%:*}; targets=${job#*:}
-  docker run --rm -v "$(pwd)":/work -w /work/flyby solmaps-env python /work/flyby/routes3.py "$origin" "$targets" 2027 2097 8 2000 30 6 3 > "flyby/run3_${origin}_$(echo "$targets" | tr , _).log" 2>&1
+  docker run --rm -v "$(pwd)":/work -w /work/flyby solmaps-env python /work/flyby/routes3.py "$origin" "$targets" 2027 2097 8 1000 60 6 3 > "flyby/run3_${origin}_$(echo "$targets" | tr , _).log" 2>&1
 done

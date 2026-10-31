@@ -3,11 +3,12 @@
 #    Tisserand-style energy screen puts them within SCREEN km/s of the direct route, plus the hand-made lists of runs 1-2
 #  - small bodies on perturbed JPL Horizons orbits (bodies.py), planets on DE440
 #  - leg flight times up to 2.5 Hohmann times (was 1.9)
-#  - three independent starts per problem, six for two-flyby sequences (see convergence.py); the spread is stored
+#  - optimiser: ring-connected population search, then basin hopping on the best routes (optimizer_study*.py);
+#    three independent runs per problem, five for two-flyby sequences; the spread is stored; interrupted runs resume
 #  - arrival excess speed stored for every route; arrivals at Earth and Mars in two variants: propulsive capture into the
 #    parking orbit, and aerocapture (assumed limits below)
 #  - the full decision vector stored, so the pages can draw the optimiser's own trajectory
-# Usage: python routes3.py ORIGIN TARGET[,TARGET] FIRST LAST ISLANDS GENS POP EVOLVES STARTS
+# Usage: python routes3.py ORIGIN TARGET[,TARGET] FIRST LAST ISLANDS GENS POP EVOLVES STARTS  (study setting: 8 1000 60 6 3)
 import json, math, sys, time, itertools
 sys.path.insert(0, '/work/flyby')
 import numpy as np
@@ -132,13 +133,35 @@ class Route:
     def get_bounds(self):
         return self.no_arr.get_bounds()
 
+def init_pool():
+    """pygmo runs Python problems in a process pool, one worker per core by default; each worker holds pykep, the DE440
+    kernel and the Horizons data (~200 MB). SOLMAPS_POOL caps the pool so a run fits a small Docker VM."""
+    import os
+    n = int(os.environ.get('SOLMAPS_POOL', '0'))
+    if n:
+        pg.mp_island.init_pool(n)
+
 def solve(seq, t0, arrival, islands, gens, pop, evolves, seed):
+    """Two stages (optimizer_study*.py, setting E): a population search on islands connected in a ring finds the region,
+    then monotonic basin hopping with compass search refines the five best routes of every island."""
     udp = Route(seq, t0, arrival)
-    archi = pg.archipelago(n=islands, algo=pg.algorithm(pg.sade(gen=gens, variant=6, variant_adptv=2, memory=True)),
-                           prob=pg.problem(udp), pop_size=pop, seed=seed)
+    prob = pg.problem(udp)
+    archi = pg.archipelago(n=islands, t=pg.ring(), algo=pg.algorithm(pg.sade(gen=gens, variant=6, variant_adptv=2, memory=True)),
+                           prob=prob, pop_size=pop, seed=seed)
     for _ in range(evolves):
         archi.evolve(); archi.wait_check()
-    best = min((isl.get_population() for isl in archi), key=lambda p: p.champion_f[0])
+    refine = pg.archipelago()
+    for i, isl in enumerate(archi):
+        src = isl.get_population()
+        top = sorted(range(len(src)), key=lambda j: src.get_f()[j][0])[:5]
+        p = pg.population(prob, 0, seed=seed + 1000 + i)
+        for j in top:
+            p.push_back(src.get_x()[j], src.get_f()[j])
+        inner = pg.algorithm(pg.compass_search(max_fevals=10000, start_range=0.05, stop_range=1e-6))
+        refine.push_back(algo=pg.algorithm(pg.mbh(inner, stop=5, perturb=0.05, seed=seed + 2000 + i)), pop=p)
+    for _ in range(2):
+        refine.evolve(); refine.wait_check()
+    best = min((isl.get_population() for isl in refine), key=lambda q: q.champion_f[0])
     x, f = best.champion_x, best.champion_f[0]
     tofs = [x[5]] + [x[9 + 4 * (i - 1)] for i in range(1, len(seq) - 1)]
     enc = [float(x[0])]
@@ -152,12 +175,18 @@ def solve(seq, t0, arrival, islands, gens, pop, evolves, seed):
             'tof_days': round(float(sum(tofs)), 1), 'arrival_mjd2000': round(enc[-1], 2)}
 
 def main():
+    init_pool()
     origin, targets = sys.argv[1], sys.argv[2].split(',')
     first, last = int(sys.argv[3]), int(sys.argv[4])
     budget = dict(islands=int(sys.argv[5]), gens=int(sys.argv[6]), pop=int(sys.argv[7]), evolves=int(sys.argv[8]))
     starts = int(sys.argv[9]) if len(sys.argv) > 9 else 3
     width, out = 2, []
     tag = f'{origin}_{"_".join(targets)}_{first}_{last}'
+    path = f'/work/flyby/routes3_{tag}.json'
+    import os
+    if os.path.exists(path):                      # resume an interrupted run
+        out = json.load(open(path))
+    done = {(r['target'], r['bin'], '-'.join(r['seq']), r['arrival']) for r in out}
     for tgt in targets:
         seqs = sequences(origin, tgt)
         print('sequences', origin, tgt, ['-'.join(s) for s in seqs], flush=True)
@@ -165,16 +194,18 @@ def main():
             t0 = [pk.epoch(f'{y}-01-01').mjd2000, pk.epoch(f'{y + width}-01-01').mjd2000]
             for seq in seqs:
                 for arrival in (['capture', 'aero'] if tgt in AERO else ['capture']):
+                    if (tgt, f'{y}-{y + width - 1}', '-'.join(seq), arrival) in done:
+                        continue
                     t = time.time()
-                    # convergence check (flyby/convergence.log): two-flyby sequences need twice the starts
-                    n = starts * (2 if len(seq) > 3 else 1)
+                    # optimizer_study*.log: three independent runs, five for two-flyby sequences (the least reliable)
+                    n = starts + (2 if len(seq) > 3 else 0)
                     runs = [solve(seq, t0, arrival, seed=y * 100 + k, **budget) for k in range(n)]
                     r = min(runs, key=lambda s: s['dv'])
                     r.update(origin=origin, target=tgt, bin=f'{y}-{y + width - 1}', feasible=bool(r['dv'] < OUT_OF_RANGE),
                              starts_dv=[s['dv'] for s in runs], seconds=round(time.time() - t, 1))
                     out.append(r)
                     print(json.dumps({k: v for k, v in r.items() if k != 'x'}), flush=True)
-            json.dump(out, open(f'/work/flyby/routes3_{tag}.json', 'w'), indent=1)
+            json.dump(out, open(path, 'w'), indent=1)
 
 if __name__ == '__main__':
     main()
