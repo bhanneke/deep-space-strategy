@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moved to solmaps</title>
+<meta name="robots" content="noindex">
+<script>
+  // The maps and their documentation moved to solmaps (2026-10-31): same page, solmaps path. Other paths go home.
+  var MOVED = ['atlas.html', 'growth-map.html', 'solar-system-3d.html', 'station-siting.html', 'how-it-works.html',
+               'technical.html', 'status.html', 'ENGINE.md'];
+  var page = location.pathname.replace(/^\/deep-space-strategy\/?/, '');
+  if (MOVED.indexOf(page) >= 0) location.replace('https://bhanneke.github.io/solmaps/' + page + location.search + location.hash);
+  else location.replace('https://bhanneke.github.io/deep-space-strategy/');
+</script>
+<style>body{font-family:system-ui,sans-serif;background:#05070d;color:#dfe5ef;padding:40px 16px}a{color:#62a6ec}</style>
+</head><body>
+<p>The maps of Deep Space Strategy are now at <a href="https://bhanneke.github.io/solmaps/">solmaps</a>. Redirecting…</p>
+</body></html>

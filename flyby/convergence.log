@@ -1,9 +1,0 @@
-{"seq": "earth-mars-vesta", "year": 2031, "arrival": "capture", "starts": [7.312, 9.929, 7.312, 7.312, 9.041, 7.312], "best3": 7.312, "best6": 7.312, "gap": 0.0, "spread3": 2.617, "seconds": 105}
-{"seq": "earth-venus-venus-mercury", "year": 2035, "arrival": "capture", "starts": [10.181, 10.178, 10.182, 17.255, 9.504, 10.193], "best3": 10.178, "best6": 9.504, "gap": 0.674, "spread3": 0.004, "seconds": 240}
-{"seq": "ceres-mars-earth", "year": 2033, "arrival": "aero", "starts": [6.136, 6.726, 6.178, 6.136, 6.136, 6.726], "best3": 6.136, "best6": 6.136, "gap": 0.0, "spread3": 0.59, "seconds": 169}
-{"seq": "jupiter-earth", "year": 2041, "arrival": "capture", "starts": [11.121, 11.121, 11.121, 11.121, 11.121, 11.121], "best3": 11.121, "best6": 11.121, "gap": 0.0, "spread3": 0.0, "seconds": 42}
-{"seq": "mars-mars-psyche", "year": 2029, "arrival": "capture", "starts": [6.073, 5.849, 6.073, 5.849, 5.849, 6.073], "best3": 5.849, "best6": 5.849, "gap": 0.0, "spread3": 0.224, "seconds": 101}
-{"seq": "earth-jupiter-saturn", "year": 2045, "arrival": "capture", "starts": [11.033, 9.956, 9.92, 10.227, 10.201, 10.005], "best3": 9.92, "best6": 9.92, "gap": 0.0, "spread3": 1.113, "seconds": 140}
-{"seq": "vesta-earth", "year": 2051, "arrival": "aero", "starts": [4.728, 4.728, 4.728, 4.822, 4.728, 4.994], "best3": 4.728, "best6": 4.728, "gap": 0.0, "spread3": 0.0, "seconds": 35}
-{"seq": "psyche-earth-mars", "year": 2061, "arrival": "capture", "starts": [8.175, 8.174, 8.173, 8.174, 8.173, 8.173], "best3": 8.173, "best6": 8.173, "gap": 0.0, "spread3": 0.002, "seconds": 145}
-{"seq": "earth-earth-jupiter", "year": 2067, "arrival": "capture", "starts": [11.471, 9.656, 10.397, 12.319, 12.63, 9.915], "best3": 9.656, "best6": 9.656, "gap": 0.0, "spread3": 1.815, "seconds": 131}

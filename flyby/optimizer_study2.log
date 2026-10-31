@@ -1,8 +1,0 @@
-{"seq": "earth-venus-venus-mercury", "year": 2035, "setting": "E ring double population + polish", "values": [9.631, 8.641, 10.178, 12.312, 9.507, 9.932], "seconds_per_run": 52}
-{"seq": "earth-venus-venus-mercury", "year": 2035, "setting": "F unconnected + polish", "values": [11.126, 10.36, 11.732, 10.351, 10.26, 10.182], "seconds_per_run": 59}
-{"seq": "earth-jupiter-saturn", "year": 2045, "setting": "E ring double population + polish", "values": [9.941, 9.914, 9.91, 9.931, 9.921, 9.913], "seconds_per_run": 37}
-{"seq": "earth-jupiter-saturn", "year": 2045, "setting": "F unconnected + polish", "values": [9.991, 9.932, 9.988, 9.953, 9.908, 9.914], "seconds_per_run": 51}
-{"seq": "earth-earth-jupiter", "year": 2067, "setting": "E ring double population + polish", "values": [10.397, 10.397, 10.397, 9.654, 9.659, 9.826], "seconds_per_run": 34}
-{"seq": "earth-earth-jupiter", "year": 2067, "setting": "F unconnected + polish", "values": [9.844, 12.423, 9.776, 9.76, 9.682, 10.899], "seconds_per_run": 48}
-{"seq": "mars-jupiter-saturn", "year": 2071, "setting": "E ring double population + polish", "values": [6.828, 6.818, 7.307, 6.819, 7.307, 6.977], "seconds_per_run": 36}
-{"seq": "mars-jupiter-saturn", "year": 2071, "setting": "F unconnected + polish", "values": [7.056, 6.828, 6.828, 7.346, 6.834, 6.832], "seconds_per_run": 42}
