@@ -87,8 +87,9 @@ tr[data-route]:hover td{background:var(--deck-2)}
   <div class="grp"><span class="lbl">Departure date</span><input type="range" id="dateSlider" min="0" max="1" step="1" aria-label="Departure date"><span class="date" id="dateOut"></span><button type="button" id="btnPlay" aria-pressed="false">Play</button></div>
   <div class="grp"><span class="lbl">Willing to wait</span><select id="horizon" aria-label="Planning horizon">
     <option value="0">no waiting</option><option value="18">6 months</option><option value="37" selected>1 year</option><option value="79">26 months (one Mars cycle)</option></select></div>
-  <div class="grp"><span class="lbl">Engine</span><select id="ve" aria-label="Exhaust velocity">
-    <option value="3.7">methane/oxygen, 3.7 km/s</option><option value="4.4" selected>hydrogen/oxygen, 4.4 km/s</option><option value="8.5">nuclear thermal, 8.5 km/s</option></select></div>
+  <div class="grp"><span class="lbl">Engine</span><select id="ve" aria-label="Engine">
+    <option value="370">methane/oxygen, Isp 370 s</option><option value="450" selected>hydrogen/oxygen, Isp 450 s</option><option value="900">nuclear thermal, Isp 900 s</option><option value="">your own engine</option></select>
+    <label class="lbl" for="isp">Isp, s</label><input id="isp" type="number" min="200" max="20000" step="10" value="450" aria-label="Specific impulse in seconds" style="width:7em"></div>
   <div class="grp"><label class="lbl" for="useFly"><input type="checkbox" id="useFly" checked> include flyby routes</label></div>
   <div class="grp"><span class="lbl">Show routes under</span><select id="maxdv" aria-label="Maximum delta-v shown">
     <option value="4">4 km/s</option><option value="6">6 km/s</option><option value="8" selected>8 km/s</option><option value="12">12 km/s</option><option value="99">all</option></select></div>
@@ -261,7 +262,7 @@ const D2R = Math.PI / 180;
 const jdAt = i => NET.meta.jd0 + i * NET.meta.step_days;
 const dateAt = i => new Date((jdAt(i) - 2440587.5) * 864e5).toISOString().slice(0, 10);
 const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const state = { i: 0, H: 37, ve: 4.4, maxdv: 8, sel: 'earth', route: 'earth>mars', stn: null, playing: false, fly: true };
+const state = { i: 0, H: 37, ve: 450 * 9.80665e-3, maxdv: 8, sel: 'earth', route: 'earth>mars', stn: null, playing: false, fly: true };
 
 /* ---- route queries ---- */
 const total = (r, k) => (r.dep[k] == null ? null : r.dep[k] + r.arr[k]);
@@ -530,7 +531,11 @@ function setI(i) { state.i = i; $('dateSlider').value = i; $('dateOut').textCont
 $('dateSlider').max = NET.meta.n - 1;
 $('dateSlider').addEventListener('input', e => setI(+e.target.value));
 $('horizon').addEventListener('change', e => { state.H = +e.target.value; draw(); renderPanel(); renderHubs(); });
-$('ve').addEventListener('change', e => { state.ve = +e.target.value; renderHubs(); });
+// exhaust speed = Isp x g0; the hub scores run the rocket equation on the stored delta-v, so any engine works
+const setIsp = isp => { state.ve = isp * 9.80665e-3; renderHubs(); };
+$('ve').addEventListener('change', e => { if (e.target.value) { $('isp').value = e.target.value; setIsp(+e.target.value); } else $('isp').focus(); });
+$('isp').addEventListener('input', e => { const v = +e.target.value; if (!(v >= 200 && v <= 20000)) return;
+  $('ve').value = ['370', '450', '900'].includes(String(v)) ? String(v) : ''; setIsp(v); });
 $('maxdv').addEventListener('change', e => { state.maxdv = +e.target.value; draw(); });
 $('btnPlay').onclick = () => { state.playing = !state.playing; $('btnPlay').setAttribute('aria-pressed', String(state.playing)); $('btnPlay').textContent = state.playing ? 'Pause' : 'Play'; if (state.playing) tick(); };
 let last = 0;
