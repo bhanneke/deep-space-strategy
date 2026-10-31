@@ -25,8 +25,9 @@ The public site and its documentation ("How solmaps works") live at https://bhan
 Needs Docker, Python 3 and Node. All orbital computation runs in the pinned container (`env/Dockerfile`).
 
 ```sh
-make image   # build the container
-make data    # direct network to 2100 and transfer alternatives
+make image      # build the container
+make ephemeris  # fetch daily JPL Horizons states (small bodies to 2205, planets 2140-2205; about 200 MB, not in git)
+make data       # direct network to 2100 and transfer alternatives
 make test    # test suite
 make serve   # ship comparison page at http://localhost:8077/
 make site    # public pages into docs/

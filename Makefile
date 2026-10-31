@@ -11,11 +11,14 @@
 IMAGE ?= solmaps-env:2
 RUN = docker run --rm -v "$(CURDIR)":/work -w /work $(IMAGE)
 
-.PHONY: all image data network alternatives test serve site stations pairs depots
+.PHONY: all image data network alternatives test serve site stations pairs depots ephemeris
 all: image data test
 
 image:
 	docker build -t $(IMAGE) env/
+
+ephemeris:
+	python3 flyby/fetch_horizons.py
 
 data: network alternatives
 

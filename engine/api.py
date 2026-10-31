@@ -10,9 +10,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
-from engine.conventions import SITES, NAMES, FUEL_SOURCES, end_state, export as conventions
+from engine.conventions import NAMES, FUEL_SOURCES, end_state, export as conventions
 from engine.data import Alternatives
-from engine.journey import Network, plan, max_payload
+from engine.journey import Network, plan, max_payload, nodes_for
 from engine.ship import Ship, PRESETS
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -49,7 +49,7 @@ class Query(BaseModel):
 
 @app.get('/api/meta')
 def meta():
-    nodes = SITES + ['eml1']
+    nodes = nodes_for(ALTS)
     return {'nodes': [{'id': n, 'name': NAMES[n], 'end_state': end_state(n)['label'], 'fuel_source': n in FUEL_SOURCES} for n in nodes],
             'presets': {k: v.to_dict() for k, v in PRESETS.items()},
             'dates': {'first': iso(ALTS.jd(0)), 'last': iso(ALTS.jd(ALTS.n_dates - 1))}, 'conventions': conventions()}
@@ -104,7 +104,7 @@ def lowthrust_rows(q, ship):
 
 @app.post('/api/compare')
 def compare(q: Query):
-    nodes = SITES + ['eml1']
+    nodes = nodes_for(ALTS)
     if q.origin not in nodes or q.destination not in nodes or q.origin == q.destination:
         raise HTTPException(400, 'choose two different sites')
     if jd_of(q.depart_until) < jd_of(q.depart_from):

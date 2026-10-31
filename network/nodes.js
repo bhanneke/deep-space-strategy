@@ -7,7 +7,10 @@ const PARK = {
   mercury: { mu: 22031.8,  r: 2440 + 200, label: 'low Mercury orbit, 200 km' },
   jupiter: { mu: 126686534, r: 1882700,   label: 'circular orbit at Callisto distance' },
   saturn:  { mu: 37931187,  r: 1221900,   label: 'circular orbit at Titan distance' },
-  ceres:   { mu: 62.63,     r: 470 + 50,  label: 'low Ceres orbit, 50 km' }
+  ceres:   { mu: 62.63,     r: 470 + 50,  label: 'low Ceres orbit, 50 km' },
+  uranus:  { mu: 5793939,   r: 436298,    label: 'circular orbit at Titania distance' },
+  neptune: { mu: 6836529,   r: 354800,    label: 'circular orbit at Triton distance' },
+  pluto:   { mu: 869.6,     r: 1188 + 100, label: 'low Pluto orbit, 100 km' }
 };
 const NODE_IDS = ['earth', 'venus', 'mercury', 'mars', 'ceres', 'vesta', 'psyche', '433', '101955', '162173', 'jupiter', 'saturn'];
 function makeNodes(atlas) {

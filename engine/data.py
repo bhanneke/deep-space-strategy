@@ -1,7 +1,7 @@
 """Loads the precomputed transfer alternatives and prices them for a journey's end states."""
 import pathlib
 import numpy as np
-from engine.conventions import planet_side_dv
+from engine.conventions import planet_side_dv, helio
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -10,6 +10,7 @@ class Alternatives:
         d = np.load(path)
         self.alt = d['alt']                               # [route, date, k, (tof days, vinf_dep, vinf_arr)] in km/s
         self.index = {p: i for i, p in enumerate(d['pairs'])}
+        self.bodies = {p.split('>')[0] for p in self.index}
         self.jd0, self.step = float(d['jd0']), float(d['step'])
         self.n_dates = self.alt.shape[1]
 
@@ -21,7 +22,7 @@ class Alternatives:
 
     def options(self, a, b, k):
         """transfer alternatives from a to b leaving on date index k, cheapest last (increasing flight time)"""
-        i = self.index.get(f'{a}>{b}')
+        i = self.index.get(f'{helio(a)}>{helio(b)}')
         if i is None or not 0 <= k < self.n_dates:
             return []
         rows = self.alt[i, k]

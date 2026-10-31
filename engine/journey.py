@@ -25,7 +25,7 @@ bodies) take at most IMPULSIVE_SHARE of the flight time; longer burns need the c
 """
 import heapq, math
 import numpy as np
-from engine.conventions import SITES, FUEL_SOURCES, NAMES, planet_side_mode, planet_side_plan, pass_days, end_state, parking_period_s, L1_LEO
+from engine.conventions import SITES, PLACES, FUEL_SOURCES, NAMES, planet_side_mode, planet_side_plan, pass_days, end_state, parking_period_s, helio, local_transfer
 from engine.ship import burn
 
 IMPULSIVE_SHARE = 0.05      # heliocentric impulses may last at most this share of the flight time
@@ -39,8 +39,11 @@ def helio_end(node, mode):
     """does the burn at this end happen in heliocentric space (after a spiral, or at a small body)?"""
     return mode == 'spiral' and node != 'eml1' or end_state(node)['kind'] == 'rendezvous'
 
-NODES = SITES + ['eml1']
-L1_DAYS = 4
+NODES = SITES + ['eml1']          # the 12-site default; plan() uses every place the loaded data covers
+
+def nodes_for(alts):
+    """places whose heliocentric body appears in the loaded alternatives"""
+    return [p for p in PLACES if helio(p) in alts.bodies]
 
 class Network:
     """priced transfer alternatives for every ordered node pair and planet-side modes: arrays [date, alternative] of
@@ -52,13 +55,14 @@ class Network:
         key = (a, b, ma, mb)
         if key in self._cache:
             return self._cache[key]
-        ha, hb = ('earth' if a == 'eml1' else a), ('earth' if b == 'eml1' else b)
-        if ha == hb:                                       # L1 <-> low Earth orbit, or no edge
+        ha, hb = helio(a), helio(b)
+        if ha == hb:                                       # inside one planet system (L1, the Moon, moons), or no edge
             res = None
-            if {a, b} == {'earth', 'eml1'} and 'spiral' not in (ma[0], mb[0]):   # a spiralling ship has no short L1 transfer
+            lt = local_transfer(a, b)
+            if lt is not None and 'spiral' not in (ma[0], mb[0]):   # a spiralling ship has no short local transfers
                 n = self.alts.n_dates
                 z = np.zeros((n, 1))
-                res = (np.full((n, 1), L1_DAYS, float), np.full((n, 1), L1_LEO), z, z, z, z, z)
+                res = (np.full((n, 1), lt[2], float), np.full((n, 1), lt[0]), np.full((n, 1), lt[1]), z, z, z, z)
         else:
             i = self.alts.index.get(f'{ha}>{hb}')
             if i is None:
@@ -98,7 +102,8 @@ def plan(alts, ship, origin, destination, depart_from_jd, depart_until_jd, arriv
     the origin (default: full tanks).
     """
     net = net or Network(alts)
-    mode = {n: node_mode(n, ship) for n in NODES}
+    nodes = nodes_for(alts)
+    mode = {n: node_mode(n, ship) for n in nodes}
     mdot = ship.mdot_kgs
     step = alts.step
     # the departure window covers the network dates inside it: the first on or after its start, the last on or before its end
@@ -113,7 +118,7 @@ def plan(alts, ship, origin, destination, depart_from_jd, depart_until_jd, arriv
     wait = int(max_wait_days / step)
     fuel0 = ship.fuel_capacity_kg if start_fuel_kg is None else start_fuel_kg
     start = Label(origin, k0, fuel0, fuel0 if origin in refuel else 0.0, [])
-    fronts = {n: [] for n in NODES}
+    fronts = {n: [] for n in nodes}
     heap = [start]; done = []
     ve, dry, pay = ship.ve_kms, ship.dry_kg, ship.payload_kg
     while heap:
@@ -128,7 +133,7 @@ def plan(alts, ship, origin, destination, depart_from_jd, depart_until_jd, arriv
         last_dep = x_dep_end if not L.legs else min(k_end, L.k + wait)   # latest parking-orbit departure, in steps
         if L.k > last_dep:
             continue
-        for b in NODES:
+        for b in nodes:
             if b == L.node or (b != destination and b not in refuel):   # stops only where the ship can refuel
                 continue
             e = net.edge(L.node, b, mode[L.node], mode[b])
@@ -150,13 +155,13 @@ def plan(alts, ship, origin, destination, depart_from_jd, depart_until_jd, arriv
             fuel_after = fuel - (m0 - m2)
             days1 = days1s + t1                                          # departure spiral or perigee passes
             days2 = (mc - m2) / mdot / DAY + t2
-            helio = (ma - mb) * helio_end(L.node, mode[L.node][0]) + (mb - mc) * helio_end(b, mode[b][0])
+            helio_kg = (ma - mb) * helio_end(L.node, mode[L.node][0]) + (mb - mc) * helio_end(b, mode[b][0])
             kd = np.arange(L.k, hi + 1)[:, None] + np.zeros_like(tof)
             x_park = kd - days1 / step                                   # parking-orbit departure, in steps
             k2 = kd + np.ceil((tof + days2) / step)
             arr_jd = alts.jd0 + kd * step + tof + days2
             ok = (~np.isnan(tof) & (fuel_after >= 0) & (k2 <= k_end) & (arr_jd <= arrive_by_jd)
-                  & (x_park >= (x_dep_start if not L.legs else L.k) - 1e-9) & (x_park <= last_dep + 1e-9) & (helio / mdot <= IMPULSIVE_SHARE * tof * DAY))
+                  & (x_park >= (x_dep_start if not L.legs else L.k) - 1e-9) & (x_park <= last_dep + 1e-9) & (helio_kg / mdot <= IMPULSIVE_SHARE * tof * DAY))
             if not ok.any():
                 continue
             cand = sorted(zip(k2[ok], -fuel_after[ok], kd[ok], np.argwhere(ok)[:, 1]))

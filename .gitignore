@@ -18,3 +18,4 @@ stations/precompute.log
 stations/pairs.json
 data/
 .pytest_cache/
+flyby/horizons/*.json
