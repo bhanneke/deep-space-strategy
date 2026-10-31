@@ -195,7 +195,7 @@ const HUBS = [
 ];
 HUBS.forEach(h => h.hex = css(h.color));
 const DESTS = NODES.map(n => n.id).filter(id => id !== 'earth');
-function hubIn(h, i, H) { return h.id === 'eml1' ? { dv: 3.77 } : best('earth', h.id, i, H); }
+function hubIn(h, i, H) { return h.id === 'eml1' ? { dv: 3.77, k: i, tof: 4 } : best('earth', h.id, i, H); }   // low Earth orbit to L1: 3.77 km/s, about 4 days
 function hubOut(h, d, i, H) {
   if (h.id === 'eml1') {
     const b = best('earth', d, i, H); if (!b) return null;
@@ -212,10 +212,12 @@ function hubOut(h, d, i, H) {
 }
 function hubScore(h, i, H, ve) {
   const inn = hubIn(h, i, H); if (!inn) return null;
+  // the onward leg leaves the hub after the ship has arrived there (within the same waiting horizon)
+  const kArr = Math.min(NET.meta.n - 1, inn.k + Math.ceil(inn.tof / NET.meta.step_days));
   const rows = [];
   for (const d of DESTS) {
     if (d === h.id) continue;
-    const direct = best('earth', d, i, H), out = hubOut(h, d, i, H);
+    const direct = best('earth', d, i, H), out = hubOut(h, d, kArr, H);
     if (!direct || !out) continue;
     // count the hub only when it is cheaper to reach than the destination and lies closer to it than low Earth orbit does
     const save = inn.dv < direct.dv && out.dv < direct.dv ? 1 - Math.exp(-(direct.dv - inn.dv) / ve) : 0;
@@ -412,7 +414,7 @@ $('assume').innerHTML = [
   `Parking orbits: ${NODES.map(n => `${esc(n.name)}: ${esc(n.park)}`).join('; ')}. GM values from NASA NSSDC fact sheets.`,
   `Gas giants: arrival means capture into a circular orbit at Callisto (Jupiter) or Titan (Saturn) distance, a modelling choice. With "include flyby routes" on, routes from Earth and from Mars to Jupiter, Saturn, Mercury, Ceres, Vesta and Psyche also use the best flyby route launched inside the waiting horizon. Each flyby result is the best launch of one sequence in one two-year window, so a horizon shorter than two years can miss it. Aerocapture is not modelled, so arrival costs are upper bounds.`,
   `Flyby routes: ESA pykep 3.0.0 MGA-1DSM (one deep-space manoeuvre per leg), up to two flybys, optimised with pygmo self-adaptive differential evolution (8 islands, two independent starts per problem). Same departure burn and capture orbits as the direct network. Leg flight times are capped at 1.9 times the Hohmann time, so some direct costs (Ceres, Saturn) sit on that cap and are slightly overstated. Validation: the same tools reproduce the real Cassini launch and Venus–Venus–Earth flyby dates within 9 to 34 days; Juno, Galileo and Dawn replay with their flown sequences, inner encounters within one to three months. Dawn flew with ion propulsion, which this impulsive model does not represent.`,
-  `Hub leverage: Earth-launched mass per kg delivered is exp(Δv/vₑ) for the leg flown on Earth propellant. Via a hub, only the leg to the hub uses Earth propellant; the onward leg uses hub propellant. Leverage counts a destination only where reaching the hub is cheaper than flying direct and the onward leg from the hub is cheaper than the direct flight from low Earth orbit, which excludes detours. It ignores dry mass, tankage, the time spent at the hub and the cost of building the plant. "Local propellant" shows how much the hub must make per kg delivered, including lifting it from the surface to the depot.`,
+  `Hub leverage: Earth-launched mass per kg delivered is exp(Δv/vₑ) for the leg flown on Earth propellant. Via a hub, only the leg to the hub uses Earth propellant; the onward leg uses hub propellant. The onward leg leaves the hub after the ship arrives there, within the same waiting horizon. Leverage counts a destination only where reaching the hub is cheaper than flying direct and the onward leg from the hub is cheaper than the direct flight from low Earth orbit, which excludes detours. It ignores dry mass, tankage, the time spent at the hub and the cost of building the plant. "Local propellant" shows how much the hub must make per kg delivered, including lifting it from the surface to the depot.`,
   `Earth–Moon L1 departures: derived patched-conic estimate, the cheaper of a burn at L1 and a drop to a 300 km perigee (about 0.64 km/s) followed by a perigee burn. Lunar flybys, which real missions use, would do slightly better.`,
   `Station search: ${esc(STN.meta.method)}`,
   `Every number here follows from the atlas dataset and these formulas. They support comparisons between routes, dates and hubs; mission design needs higher-fidelity tools.`
