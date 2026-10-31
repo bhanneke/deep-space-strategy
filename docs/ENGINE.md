@@ -129,8 +129,18 @@ The two transcriptions agree within 1% on fuel. With Sims–Flanagan alone (impu
 check showed errors of 8.6 million km at 24 segments, 2.4 million km at 48 and 0.28 million km at 96. That pattern of
 discretisation error is why the engine refines in the continuous model.
 
-The check error grows with thrust at 24 segments: 1.2 km at 500 N, 16 km at 2 kN and 47 km at 5 kN for a 100 t ship
-from Earth to Mars.
+Two faults in the engine surfaced at high thrust (fixed 2026-10-31). First, pykep applies throttle × maximum thrust ×
+direction and allows the direction vector below unit length. The engine normalised that vector when it handed the
+thrust profile to the check, which added thrust on partly throttled segments; the check error grew with thrust (1.2 km
+at 500 N, 16 km at 2 kN, 47 km at 5 kN). With pykep's own vectors, the 500 N leg checks to 0.08 km and the 2 kN legs
+to 0.2 km. Second, the engine recorded the check without acting on it. One solution the optimiser called feasible
+missed Mars by 16,564 km in the check and burned 301 kg more fuel than its thrust needed. A leg now counts only when
+the check confirms it: arrival within 100 km of the target and the final mass within 1 kg.
+
+Two properties of the solvers remain. Repeated runs with the same inputs can end in different local optima (one 2 kN
+run checked to 10 km, the next to 0.2 km; at 5 kN some runs find no confirmed leg); the cache keeps a stored answer
+fixed. And 24 equal segments of about 15 days cannot represent a burn of hours: a strong engine spreads each burn
+over a whole segment at low throttle, which costs Δv.
 
 **One grid for all exhaust speeds?** At a fixed initial acceleration, the equivalent Δv of a heliocentric leg should
 barely depend on the exhaust speed; fuel would then follow from the rocket equation, and a grid over acceleration alone

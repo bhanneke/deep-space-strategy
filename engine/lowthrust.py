@@ -33,6 +33,9 @@ MU_SUN = 1.32712440018e20            # m^3/s^2
 # direction variables without effect and stalls the solvers). 1e-4 in units of Earth's orbital speed allows up to about
 # 3 m/s of numerical slack; the result reports the excess speeds the solution uses.
 VINF_SLACK = 1e-4
+# a refined leg counts only when the independent integration confirms it: arrival within 100 km of the target planet and
+# the final mass within 1 kg (a feasible-looking optimiser solution once missed Mars by 4 million km in the check)
+CHECK_KM, CHECK_KG = 100.0, 1.0
 AU = 149597870700.0
 DAY = 86400.0
 
@@ -126,7 +129,9 @@ def zero_order_hold(sf, origin, target, ship, m0, t0_bounds, tof_bounds, vinf_de
     tof = z[10 + 4 * nseg] * TIME / DAY
     mf = z[1] * m0
     seg = np.array(z[10:10 + 4 * nseg]).reshape(nseg, 4)
-    thrust = [list(r[0] * ship.thrust_n * np.asarray(r[1:]) / np.linalg.norm(r[1:])) for r in seg]
+    # pykep applies throttle x max thrust x direction, with the direction vector allowed below unit length
+    # (inequalities_for_tc); normalising it here added thrust and put the check off by up to 47 km at 5 kN
+    thrust = [list(r[0] * ship.thrust_n * np.asarray(r[1:])) for r in seg]
     vdep = list(z[2] * V * np.asarray(z[3:6])); varr = list(z[6] * V * np.asarray(z[7:10]))
     leg = {'origin': origin, 'target': target, 'model': 'zero-order hold (continuous thrust)', 't0_mjd2000': t0, 'tof_days': tof,
            'm0_kg': m0, 'mf_kg': mf, 'fuel_kg': m0 - mf, 'nseg': nseg, 'thrust_n': thrust,
@@ -134,6 +139,9 @@ def zero_order_hold(sf, origin, target, ship, m0, t0_bounds, tof_bounds, vinf_de
            'vinf_dep_vec_ms': vdep, 'vinf_arr_vec_ms': varr,
            'vinf_dep_ms': float(np.linalg.norm(vdep)), 'vinf_arr_ms': float(np.linalg.norm(varr))}
     leg['check'] = independent_check(t0, tof, vdep, varr, thrust, mf, ship, m0, pls, plf)
+    c = leg['check']
+    if c['position_error_km'] > CHECK_KM or abs(c['mass_error_kg']) > CHECK_KG:
+        return None                                   # the optimiser called it feasible; the independent integration disagrees
     return leg
 
 def heliocentric(origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep=0.0, vinf_arr=0.0, nseg=24, starts=8, seed=1):

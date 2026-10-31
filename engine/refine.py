@@ -45,7 +45,7 @@ def cached(kind, params, compute):
 def lowthrust_transfer(origin, target, ship, t0_bounds, tof_bounds, vinf_dep=0.0, nseg=24, starts=8):
     from engine import lowthrust as LT
     params = {'origin': origin, 'target': target, 'ship': ship.to_dict(), 't0_bounds': list(t0_bounds), 'tof_bounds': list(tof_bounds),
-              'vinf_dep': vinf_dep, 'nseg': nseg, 'starts': starts, 'model': 'sf+zoh v4, burn or spiral, window at parking-orbit departure, 3 m/s slack'}
+              'vinf_dep': vinf_dep, 'nseg': nseg, 'starts': starts, 'model': 'sf+zoh v6, raw thrust directions, checked legs only, burn or spiral, window at parking-orbit departure, 3 m/s slack'}
     return cached('lowthrust', params, lambda: LT.transfer(origin, target, ship, t0_bounds, tof_bounds, vinf_dep, nseg, starts))
 
 def impulsive(a, b, depart_jd, tof_guess_days, dep_node=None, arr_node=None):

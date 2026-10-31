@@ -18,7 +18,7 @@ def leg():
 
 def test_independent_integration_reaches_mars(leg):
     c = leg['check']                                # scipy DOP853 on the thrust profile, separate from pykep's integrator
-    assert c['position_error_km'] < 50
+    assert c['position_error_km'] < 5               # raw pykep thrust directions (normalising them cost up to 47 km)
     assert c['velocity_error_ms'] < 0.05
     assert abs(c['mass_error_kg']) < 1.0
 
