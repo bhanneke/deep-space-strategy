@@ -12,9 +12,12 @@ ATLAS = bodies.load_atlas()
 OUT_OF_RANGE = 999.0                         # penalty, km/s: routes outside the ephemeris range
 # GM (km^3/s^2) and parking radius (km), same as network/nodes.js
 PARK = {'earth': (398600.4, 6378 + 300), 'mars': (42828.4, 3396 + 300), 'venus': (324858.6, 6052 + 300),
-        'mercury': (22031.8, 2440 + 200), 'jupiter': (126686534, 1882700), 'saturn': (37931187, 1221900)}
+        'mercury': (22031.8, 2440 + 200), 'jupiter': (126686534, 1882700), 'saturn': (37931187, 1221900),
+        'ceres': (62.63, 470 + 50)}
 
 def park_burn(vinf, node):                   # km/s, burn between a parking orbit and a hyperbola
+    if node not in PARK:                     # small bodies: rendezvous, the burn equals the excess speed
+        return vinf
     mu, r = PARK[node]
     return math.sqrt(vinf * vinf + 2 * mu / r) - math.sqrt(mu / r)
 
@@ -40,6 +43,15 @@ SEQS = {
         'psyche':  [['earth', 'psyche'], ['earth', 'mars', 'psyche'], ['earth', 'earth', 'psyche'], ['earth', 'earth', 'mars', 'psyche']],
         'mercury': [['earth', 'mercury'], ['earth', 'venus', 'mercury'], ['earth', 'venus', 'venus', 'mercury'], ['earth', 'earth', 'venus', 'mercury']],
     },
+    # return routes: from the belt and the Jupiter system back to Earth and Mars (cargo return, round trips)
+    'ceres':   {'earth': [['ceres', 'earth'], ['ceres', 'mars', 'earth'], ['ceres', 'venus', 'earth']],
+                'mars':  [['ceres', 'mars'], ['ceres', 'earth', 'mars'], ['ceres', 'mars', 'mars']]},
+    'vesta':   {'earth': [['vesta', 'earth'], ['vesta', 'mars', 'earth'], ['vesta', 'venus', 'earth']],
+                'mars':  [['vesta', 'mars'], ['vesta', 'earth', 'mars'], ['vesta', 'mars', 'mars']]},
+    'psyche':  {'earth': [['psyche', 'earth'], ['psyche', 'mars', 'earth'], ['psyche', 'venus', 'earth']],
+                'mars':  [['psyche', 'mars'], ['psyche', 'earth', 'mars'], ['psyche', 'mars', 'mars']]},
+    'jupiter': {'earth': [['jupiter', 'earth'], ['jupiter', 'mars', 'earth'], ['jupiter', 'venus', 'earth']],
+                'mars':  [['jupiter', 'mars'], ['jupiter', 'earth', 'mars'], ['jupiter', 'mars', 'mars']]},
     'mars': {
         'jupiter': [['mars', 'jupiter'], ['mars', 'earth', 'jupiter'], ['mars', 'mars', 'jupiter'], ['mars', 'earth', 'earth', 'jupiter']],
         'saturn':  [['mars', 'saturn'], ['mars', 'jupiter', 'saturn'], ['mars', 'earth', 'jupiter', 'saturn'], ['mars', 'mars', 'jupiter', 'saturn']],

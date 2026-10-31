@@ -51,10 +51,56 @@ def small_body(bid, atlas):
             math.radians(el['arg_peri_deg']), math.radians(el['M_deg'])]
     return pk.planet(pk.udpla.keplerian(ep, elem, pk.MU_SUN, bid, [-1, -1, -1], pk.el_type.KEP_M))
 
+HORIZONS_DIR = '/work/flyby/horizons'
+AU_M, DAY_S = pk.AU, 86400.0
+# GM (m^3/s^2) and radius (m) for flyby bookkeeping; the small bodies are never flyby bodies in solmaps
+SMALL_PHYS = {'ceres': (6.263e10, 470e3), 'vesta': (1.729e10, 262e3), 'psyche': (1.53e9, 113e3)}
+
+class HorizonsBody:
+    """Perturbed JPL Horizons states every 10 days, cubic Hermite interpolation of position and velocity.
+
+    Horizons integrates each small body with planetary perturbations, so its positions stay accurate over the
+    decades the network covers; two-body motion from fixed elements drifts. Same pykep interface as DE440Planet.
+    """
+    def __init__(self, name):
+        d = json.load(open(f'{HORIZONS_DIR}/{name}.json'))
+        self.name, self.rows = name, d['rows']
+        self.t0, self.h = self.rows[0][0] - 2451544.5, self.rows[1][0] - self.rows[0][0]
+        self.mu_self, self.radius = SMALL_PHYS.get(name, (1.0, 1e3))
+    def eph(self, mjd2000):
+        u = (mjd2000 - self.t0) / self.h
+        i = min(max(int(math.floor(u)), 0), len(self.rows) - 2)
+        s = u - i
+        a, b = self.rows[i], self.rows[i + 1]
+        h00, h10, h01, h11 = 2*s**3 - 3*s**2 + 1, s**3 - 2*s**2 + s, -2*s**3 + 3*s**2, s**3 - s**2
+        d00, d10, d01, d11 = 6*s**2 - 6*s, 3*s**2 - 4*s + 1, -6*s**2 + 6*s, 3*s**2 - 2*s
+        r = [h00*a[1+k] + h10*self.h*a[4+k] + h01*b[1+k] + h11*self.h*b[4+k] for k in range(3)]
+        v = [(d00*a[1+k] + d10*self.h*a[4+k] + d01*b[1+k] + d11*self.h*b[4+k]) / self.h for k in range(3)]
+        return [x * AU_M for x in r], [x * AU_M / DAY_S for x in v]
+    def get_name(self):
+        return self.name
+    def get_mu_central_body(self):
+        return pk.MU_SUN
+    def get_mu_self(self):
+        return self.mu_self
+    def get_radius(self):
+        return self.radius
+    def get_safe_radius(self):
+        return self.radius * 1.1
+
+def small_body_horizons_available(name):
+    import os
+    return os.path.exists(f'{HORIZONS_DIR}/{name}.json')
+
 _cache = {}
 def body(name, atlas):
     if name not in _cache:
-        _cache[name] = pk.planet(DE440Planet(name)) if name in PLANETS else small_body(name, atlas)
+        if name in PLANETS:
+            _cache[name] = pk.planet(DE440Planet(name))
+        elif small_body_horizons_available(name):
+            _cache[name] = pk.planet(HorizonsBody(name))
+        else:
+            _cache[name] = small_body(name, atlas)
     return _cache[name]
 
 def load_atlas(path='/work/atlas/atlas_dataset.json'):
