@@ -83,11 +83,18 @@ problem. No engine enters them. The engine enters through two numbers, exhaust s
 - **Exhaust speed** (Isp × g₀) turns Δv into fuel through the rocket equation. The engine applies it per burn at query
   time; the growth map and the station page take any Isp from 200 to 20,000 s. The station page interpolates its
   fuel-saved score between 41 precomputed exhaust speeds from 2 to 200 km/s (largest error 0.03 percentage points).
-- **Thrust** decides the flight model. A ship that burns its full tank in less than a day (`Ship.low_thrust` false)
-  flies impulsive transfers. A ship that needs longer flies continuous-thrust legs. At each planet, the escape or
-  capture becomes one Oberth burn when it lasts at most a tenth of the parking-orbit period; otherwise the ship
-  spirals. The engine label (chemical, nuclear, electric) plays no part, so a future engine with high thrust and
-  high Isp falls into the right model by its numbers.
+- **Thrust** decides the flight model, transfer by transfer. The engine label (chemical, nuclear, electric) plays no
+  part, so a future engine falls into the right model by its numbers.
+  - *At each planet* (`conventions.planet_side_plan`): one Oberth burn when the escape burn lasts at most a tenth of
+    the parking-orbit period; a longer burn splits into up to 50 perigee passes with the same Δv, and the ship spends
+    the time of the intermediate orbits (a 510 t ship with 1 MN needs three passes and 9 hours from low Earth orbit);
+    beyond 50 passes the ship spirals out (Edelbaum) and then makes an impulse of v∞ at the edge of the sphere of
+    influence. Pass and spiral time count in the journey's dates.
+  - *Between planets*: a short-burn leg counts only when its heliocentric impulses (after a spiral, or at a small body)
+    last at most 5% of the flight (`journey.IMPULSIVE_SHARE`). Ships below 4 mm/s² at full mass
+    (`Ship.low_thrust`) also get continuous-thrust legs; at that acceleration a 6 km/s transfer burns for 5% of a year
+    or more. Stronger ships burn for hours to days against flights of months, and segments of weeks cannot describe
+    such burns, so they fly short-burn legs only.
 
 ## Continuous thrust
 
@@ -99,16 +106,20 @@ A continuous-thrust transfer has three phases, reported separately:
    the body. The departure window bounds the start of this phase.
 2. **Heliocentric leg.** pykep's Sims–Flanagan transcription (`sf_pl2pl`) finds the route from several random starts.
    Its throttle profile seeds pykep's zero-order-hold model (`zoh_pl2pl`): thrust constant in magnitude and direction
-   within each of 24 segments, integrated with the heyoka Taylor integrator together with the falling mass,
+   within each of 24 segments (48 from 1 mm/s² up), integrated with the heyoka Taylor integrator together with the falling mass,
    dm/dt = −|T|/ve. IPOPT maximises the arrival mass subject to position, velocity and mass continuity. SLSQP stalls on
-   this problem. The random starts scale their throttles so that the first guess spends about 10 km/s; with full
+   this problem. The search starts from the four cheapest two-impulse (Lambert) transfers in the window, with up to
+   two revolutions, and then from random throttles scaled so that the first guess spends about 10 km/s; with full
    random throttles, a high-thrust ship starts on an escape orbit from the Sun and the propagation returns NaN.
+   Above 0.5 mm/s² the engine also solves a reference ship with 0.25 mm/s² and starts a refinement from its
+   solution with the throttles scaled down (continuation). The stronger ship can fly that profile exactly, so its
+   result is never worse than the weaker ship's. The solver accepts constraint violations up to 1e-8 in its units
+   (1.5 km, 0.3 mm/s); scaling a profile to another thrust level adds about 5e-9 of round-off.
 3. **Capture.** The reverse burn or spiral into the destination's parking orbit; none at small bodies.
 
 **Alternatives.** The comparison service solves each continuous-thrust query under up to six flight-time caps (the
 time to the deadline times 1, 0.6, 0.4, 0.25, 0.15 and 0.1, at least 60 days) and keeps the options where each slower
-one saves at least 0.5% fuel. Earth to Mars, departures in 2029, a hypothetical 100 t ship with 2 kN at Isp 10,000 s:
-156 days for 22.2 t of fuel, 231 days for 17.9 t, 274 days for 17.6 t.
+one saves at least 0.5% fuel.
 
 The zero-order-hold problem needs a non-zero range for the excess speeds at both ends. The engine allows up to
 3 m/s, which the solution uses as free velocity: about 0.1% of a typical transfer, and reported with every result.
@@ -137,25 +148,25 @@ to 0.2 km. Second, the engine recorded the check without acting on it. One solut
 missed Mars by 16,564 km in the check and burned 301 kg more fuel than its thrust needed. A leg now counts only when
 the check confirms it: arrival within 100 km of the target and the final mass within 1 kg.
 
-Two properties of the solvers remain. Repeated runs with the same inputs can end in different local optima (one 2 kN
-run checked to 10 km, the next to 0.2 km; at 5 kN some runs find no confirmed leg); the cache keeps a stored answer
-fixed. And 24 equal segments of about 15 days cannot represent a burn of hours: a strong engine spreads each burn
-over a whole segment at low throttle, which costs Δv.
+**More thrust never costs more.** `tests/test_accel_sweep.py` checks this on Earth to Mars, 2029 (40 t ship, Isp
+4,000 s): the equivalent Δv may not rise with the acceleration, and no result may exceed the best two-impulse
+transfer in the window (8.264 km/s; a ship with continuous thrust can phase and spread its burns, which is why it
+needs less). Before the Lambert starts and the continuation, the search ended in local optima:
 
-**One grid for all exhaust speeds?** At a fixed initial acceleration, the equivalent Δv of a heliocentric leg should
-barely depend on the exhaust speed; fuel would then follow from the rocket equation, and a grid over acceleration alone
-would serve every engine. `tests/probe_dv_vs_ve.py` tests this on Earth to Mars, 2029:
+| Initial acceleration | Before | After |
+| --- | --- | --- |
+| 0.25 mm/s² | 5.712 km/s | 5.712 km/s |
+| 1 mm/s² | 6.826 km/s | 5.671 km/s |
+| 2 mm/s² | 6.700 km/s | 5.671 km/s |
+| 3.5 mm/s² | none found | 5.671 km/s |
 
-| Initial acceleration | Isp 2,000 s | Isp 4,000 s | Isp 10,000 s |
-| --- | --- | --- | --- |
-| 0.25 mm/s² | 5.739 km/s | 5.731 km/s | 5.723 km/s |
-| 2 mm/s² | 6.896 km/s | 5.747 km/s | 5.815 km/s |
-| 20 mm/s² | none found | 7.140 km/s | 7.102 km/s |
+From 1 mm/s² on, the result equals the reference ship's solution at 48 segments: IPOPT does not improve on that start,
+so stronger ships do not yet exploit their extra thrust. The results err on the side of cost.
 
-At low acceleration the three agree within 0.3%. At higher accelerations the optimiser ends in local optima: a ship
-with more thrust can always fly the slower ship's profile, so 7.1 km/s at 20 mm/s² against 5.7 km/s at 0.25 mm/s²
-shows a search failure. A precomputed grid would store such failures. Seeding strong engines from the impulsive
-Lambert solution comes first; the grid follows once the search finds the optimum reliably.
+**One grid for all exhaust speeds?** At a fixed initial acceleration, the equivalent Δv of a heliocentric leg barely
+depends on the exhaust speed: 5.739, 5.731 and 5.723 km/s at Isp 2,000, 4,000 and 10,000 s and 0.25 mm/s²
+(`tests/probe_dv_vs_ve.py`). Fuel then follows from the rocket equation, and a grid over acceleration alone, from
+0.05 to 4 mm/s², would serve every continuous-thrust engine. That grid is the next precomputation for the Mac Mini.
 
 ## Earlier review findings, checked against the code (2026-10-31)
 
@@ -191,9 +202,11 @@ The tests cover:
 - The journey search treats each heliocentric leg independently of the next. Slingshot routes are not yet edges of the
   journey graph, and planetary flybys appear only in the flyby search.
 - Continuous-thrust transfers cover one leg between two sites. These ships are not part of the multi-leg journey
-  search. The spiral uses Edelbaum's formula, without eclipses or the third-body effect of the Moon. A ship between
-  the two planet-side regimes could save fuel with several perigee burns; the engine charges it the full spiral.
-- The continuous-thrust search ends in local optima for accelerations above about 1 mm/s² (table above).
+  search. The spiral uses Edelbaum's formula, without eclipses or the third-body effect of the Moon.
+- Perigee passes are counted at full mass, with equal steps in perigee speed and one orbit between burns; the last
+  pass carries the whole excess speed. A spiralling ship has no short route between low Earth orbit and L1.
+- From 1 mm/s² on, continuous-thrust results equal the 0.25 mm/s² reference solution: correct, possibly costlier than
+  the true optimum for the stronger ship.
 - No finite-burn losses for chemical ships, only the warning; no aerocapture in the engine yet (the cargo planner in
   the 3D atlas assumes it up to 6 km/s, an unsourced assumption).
 - The result list of a journey query can hold near-identical journeys 10 days apart; a thinning step would make it easier to read.

@@ -55,6 +55,51 @@ def planet_side_dv(node, vinf):
         return min(at_l1, via_perigee)
     return vinf
 
+PASS_ARC = 0.1        # one burn may last this share of the parking-orbit period (otherwise split into perigee passes)
+MAX_PASSES = 50       # beyond this many perigee passes the ship spirals instead
+
+def planet_side_plan(node, mass_kg, ve_kms, mdot_kgs):
+    """how a ship of this mass and engine leaves or reaches the node's parking orbit: ('burn', 1), ('passes', n) or
+    ('spiral', 0). The escape burn's duration decides: up to PASS_ARC of the orbit period it is one Oberth burn;
+    longer burns split into n perigee burns of at most that length (apogee raising), which keep the Oberth effect at the
+    cost of the time on the intermediate orbits; beyond MAX_PASSES the ship spirals (Edelbaum)."""
+    e = end_state('earth' if node == 'eml1' else node)
+    if e['kind'] != 'parking':
+        return 'burn', 1
+    dv = math.sqrt(2 * e['mu'] / e['r']) - math.sqrt(e['mu'] / e['r'])
+    seconds = mass_kg * (1 - math.exp(-dv / ve_kms)) / mdot_kgs
+    n = max(1, math.ceil(seconds / (PASS_ARC * 2 * math.pi * math.sqrt(e['r'] ** 3 / e['mu'])) - 1e-12))
+    return ('burn', 1) if n == 1 else ('passes', n) if n <= MAX_PASSES else ('spiral', 0)
+
+def pass_days(node, n):
+    """days on the intermediate orbits when a planet-side burn splits into n perigee passes. The first n-1 burns raise
+    the perigee speed in equal steps from circular toward escape, each followed by one full orbit; the last burn turns
+    the orbit into the hyperbola (and carries any excess speed). Every intermediate orbit is bound."""
+    e = end_state('earth' if node == 'eml1' else node)
+    if n <= 1 or e['kind'] != 'parking':
+        return 0.0
+    mu, r = e['mu'], e['r']
+    vc, vesc = math.sqrt(mu / r), math.sqrt(2 * mu / r)
+    total = 0.0
+    for k in range(1, n):
+        v = vc + k * (vesc - vc) / n
+        a = 1.0 / (2.0 / r - v * v / mu)
+        total += 2 * math.pi * math.sqrt(a ** 3 / mu)
+    return total / 86400.0
+
+def planet_side_mode(node, vinf, mode):
+    """planet-side cost for a ship flying in the given mode: (total dv, spiral part) in km/s.
+    'burn' or 'passes': Oberth burns (planet_side_dv), in one go or split over perigee passes. 'spiral': a slow tangential spiral between the parking orbit and
+    escape (Edelbaum: the circular speed), then an impulse of vinf at the edge of the sphere of influence; at L1 only the
+    burn at L1 itself, since the perigee drop needs a short burn near Earth."""
+    e = end_state(node)
+    if mode in ('burn', 'passes') or e['kind'] == 'rendezvous':
+        return planet_side_dv(node, vinf), 0.0
+    if e['kind'] == 'l1':
+        return math.sqrt(vinf * vinf + V_ESC_L1 ** 2) - V_L1, 0.0
+    vc = math.sqrt(e['mu'] / e['r'])
+    return vc + vinf, vc
+
 def vinf_from_planet_side(node, dv):
     """inverse of planet_side_dv for parking orbits and rendezvous"""
     e = end_state(node)

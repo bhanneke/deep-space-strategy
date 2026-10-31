@@ -14,7 +14,7 @@ import math
 
 G0 = 9.80665                          # m/s^2, standard gravity (defines Isp)
 FINITE_BURN_LIMIT = 0.1               # burn duration as share of the parking-orbit period above which a warning shows
-CONTINUOUS_LIMIT_S = 86400.0      # one day of burning: beyond this, a ship flies heliocentric legs with continuous thrust
+A_CONTINUOUS = 4e-3               # m/s2 at full mass: below this a 6 km/s transfer burns for 5% of a year or more
 
 @dataclass
 class Ship:
@@ -41,9 +41,11 @@ class Ship:
 
     @property
     def low_thrust(self):
-        """heliocentric legs need continuous thrust when a full tank takes longer than CONTINUOUS_LIMIT_S to burn;
-        shorter burns count as impulses against flights of weeks to years"""
-        return self.full_burn_s > CONTINUOUS_LIMIT_S
+        """the engine also computes continuous-thrust legs for ships below A_CONTINUOUS at full mass. Stronger ships
+        burn briefly against their flight times and fly short-burn legs only; the continuous-thrust search, with segments
+        of weeks, cannot describe burns of hours or days. Each short-burn leg still checks itself: its heliocentric
+        impulses may take at most 5% of the flight (journey.IMPULSIVE_SHARE)"""
+        return self.thrust_n / self.mass(self.fuel_capacity_kg) < A_CONTINUOUS
 
     def mass(self, fuel_kg, payload_kg=None):
         return self.dry_kg + (self.payload_kg if payload_kg is None else payload_kg) + fuel_kg

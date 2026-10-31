@@ -1,9 +1,9 @@
 """Low-thrust transfers with continuous thrust and changing mass (pykep Sims-Flanagan, independently checked).
 
 A low-thrust journey has three phases, kept apart in the results:
-  1. planet-side departure from a parking orbit to escape. When the escape burn lasts at most a tenth of the
-     parking-orbit period (FINITE_BURN_LIMIT), the ship makes one Oberth burn of sqrt(2 mu/r) - sqrt(mu/r). Longer
-     burns become a slow tangential spiral, whose velocity change from a circular orbit to escape equals the circular
+  1. planet-side departure from a parking orbit to escape (conventions.planet_side_plan). When the escape burn lasts at
+     most a tenth of the parking-orbit period, the ship makes one Oberth burn of sqrt(2 mu/r) - sqrt(mu/r); longer burns
+     split over up to 50 perigee passes with the same velocity change. Beyond that the ship flies a slow tangential spiral, whose velocity change from a circular orbit to escape equals the circular
      speed (Edelbaum); the phase's time and fuel follow from thrust and mass flow. At small bodies the ship starts at rest relative to
      the body. Optionally a launcher or kick stage supplies a departure excess speed (vinf_dep), not paid by the ship.
   2. heliocentric leg, in two steps. Sims-Flanagan (pykep.trajopt.sf_pl2pl) finds the route quickly from several
@@ -14,8 +14,8 @@ A low-thrust journey has three phases, kept apart in the results:
      continuity. The zero-order-hold solution is the model's result.
   3. planet-side capture: the reverse burn or spiral into the destination's parking orbit (none at small bodies).
 
-Which ships fly this model: those that need more than a day to burn a full tank (Ship.low_thrust). The model holds
-for any thrust level, so high-thrust, high-Isp engines use it as well.
+Which ships fly this model: those below 4 mm/s2 at full mass (Ship.low_thrust). Stronger ships burn for hours to days
+against flights of months and fly short-burn legs (journey.py); segments of weeks cannot describe their burns.
 
 Independent check: the solution's thrust profile is integrated as truly continuous thrust (two-body gravity plus
 thrust, dm/dt = -|T|/ve) with scipy's DOP853 integrator, separate from pykep's propagation, and compared with the
@@ -25,8 +25,8 @@ import math, sys
 sys.path.insert(0, '/work/flyby'); sys.path.insert(0, '/work')
 import numpy as np
 
-from engine.conventions import end_state, NAMES, parking_period_s
-from engine.ship import G0, FINITE_BURN_LIMIT
+from engine.conventions import end_state, NAMES, planet_side_plan, pass_days
+from engine.ship import G0
 
 MU_SUN = 1.32712440018e20            # m^3/s^2
 # The zero-order-hold problem needs a non-zero range for the excess speeds at both ends (a zero-width bound leaves their
@@ -58,6 +58,47 @@ def _problem(origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep, vinf_arr
                               vinfs=vinf_dep, vinff=vinf_arr, nseg=nseg, cut=0.6, mass_scaling=m0, with_gradient=True)
     return udp, pls, plf
 
+def lambert_seeds(origin, target, ship, m0, t0_bounds, tof_bounds, nseg, count=4):
+    """Sims-Flanagan starting points from two-impulse (Lambert) transfers with up to two revolutions: the cheapest few
+    departure dates and flight times on a 24 x 24 grid inside the bounds, each turned into a thrust profile that applies the departure impulse at
+    full throttle from the first segment on and the arrival impulse from the last segment backwards. Strong engines fly
+    close to these profiles; random starts alone end in local optima above about 1 mm/s2."""
+    import pykep as pk, bodies
+    atlas = bodies.load_atlas()
+    pls, plf = bodies.body(origin, atlas), bodies.body(target, atlas)
+    cand = []
+    for t0 in np.linspace(t0_bounds[0], t0_bounds[1], 24):
+        r0, v0p = pls.eph(float(t0))
+        for tof in np.linspace(tof_bounds[0], tof_bounds[1], 24):
+            r1, v1p = plf.eph(float(t0 + tof))
+            try:
+                l = pk.lambert_problem(r0=r0, r1=r1, tof=float(tof) * DAY, mu=MU_SUN, multi_revs=2)
+            except Exception:
+                continue
+            for v0, v1 in zip(l.v0, l.v1):                     # zero- and multi-revolution solutions
+                d1 = np.array(v0) - np.array(v0p); d2 = np.array(v1p) - np.array(v1)
+                cand.append((float(np.linalg.norm(d1) + np.linalg.norm(d2)), float(t0), float(tof), d1, d2))
+    cand.sort(key=lambda c: c[0])
+    seeds, used = [], []
+    for dv, t0, tof, d1, d2 in cand:
+        if any(abs(t0 - a) < 0.1 * (t0_bounds[1] - t0_bounds[0] + 1) and abs(tof - b) < 0.1 * (tof_bounds[1] - tof_bounds[0] + 1) for a, b in used):
+            continue                                              # distinct seeds only
+        used.append((t0, tof))
+        cap = ship.thrust_n * tof * DAY / nseg / m0              # velocity change of one segment at full throttle, m/s
+        thr = np.zeros((nseg, 3))
+        for dvec, order in ((d1, range(nseg)), (d2, range(nseg - 1, -1, -1))):
+            left = float(np.linalg.norm(dvec)); u = dvec / max(left, 1e-12)
+            for i in order:
+                if left <= 0:
+                    break
+                take = min(left, cap * (1 - np.linalg.norm(thr[i])))
+                thr[i] += u * take / cap; left -= take
+        mf = m0 * math.exp(-dv / ship.ve_kms / 1000)
+        seeds.append([t0, max(mf, ship.dry_kg + ship.payload_kg)] + [0.0] * 6 + list(thr.ravel()) + [tof])
+        if len(seeds) == count:
+            break
+    return seeds
+
 def sims_flanagan(origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep=0.0, vinf_arr=0.0, nseg=24, starts=8, seed=1):
     """feasible Sims-Flanagan legs, best (highest arrival mass) first: the fast first step. Bounds in MJD2000 and days."""
     import pygmo as pg
@@ -70,9 +111,15 @@ def sims_flanagan(origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep=0.0,
     # random starts with throttles scaled so that the first guess spends about 10 km/s: full random throttles on a
     # high-thrust ship push it onto an escape orbit from the Sun, where the propagation returns NaN
     scale = min(1.0, 10000.0 / (ship.thrust_n / m0 * 0.5 * (tof_bounds[0] + tof_bounds[1]) * DAY))
-    for k in range(starts):
+    lb, ub = prob.get_bounds()
+    firsts = [list(np.clip(x, lb, ub)) for x in lambert_seeds(origin, target, ship, m0, t0_bounds, tof_bounds, nseg)] \
+        if vinf_dep == 0 and vinf_arr == 0 else []
+    for k in range(len(firsts) + starts):                           # Lambert seeds first, then scaled random starts
         pop = pg.population(prob, 1, seed=seed + k)
-        x0 = np.array(pop.get_x()[0]); x0[8:-1] *= scale; pop.set_x(0, x0)
+        if k < len(firsts):
+            pop.set_x(0, firsts[k])
+        else:
+            x0 = np.array(pop.get_x()[0]); x0[8:-1] *= scale; pop.set_x(0, x0)
         pop = algo.evolve(pop)
         x = pop.champion_x
         if prob.feasibility_x(x):
@@ -105,7 +152,7 @@ def zero_order_hold(sf, origin, target, ship, m0, t0_bounds, tof_bounds, vinf_de
                                vinf_arr_bounds=[0.0, max(vinf_arr * 1000 / V, VINF_SLACK)],
                                nseg=nseg, cut=0.6, tas=(ta, ta_var), inequalities_for_tc=True, L=L, V=V)
     prob = pg.problem(udp)
-    prob.c_tol = [1e-9] * prob.get_nc()
+    prob.c_tol = [1e-8] * prob.get_nc()              # 1e-8 AU = 1.5 km; the independent check (CHECK_KM) is the real gate
     # seed: the Sims-Flanagan solution in zero-order-hold variables
     x = sf['x']
     def unit(v):
@@ -144,15 +191,38 @@ def zero_order_hold(sf, origin, target, ship, m0, t0_bounds, tof_bounds, vinf_de
         return None                                   # the optimiser called it feasible; the independent integration disagrees
     return leg
 
+A_REF = 0.25e-3          # m/s2: reference acceleration for continuation (the search is reliable here)
+
 def heliocentric(origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep=0.0, vinf_arr=0.0, nseg=24, starts=8, seed=1):
-    """best continuous-thrust leg: Sims-Flanagan search, then zero-order-hold refinement. None if infeasible."""
+    """best continuous-thrust leg: Sims-Flanagan search, then zero-order-hold refinement. None if infeasible.
+
+    Continuation for stronger engines: a ship with more thrust can fly exactly what a weaker ship flies (the same force
+    gives the same trajectory and, at the same exhaust speed, the same mass flow). Above 2 x A_REF the engine also solves
+    a reference ship with A_REF and starts a refinement from its solution, throttles scaled down. That start is feasible,
+    so the result is at least as good as the weaker ship's; random starts alone ended in local optima above ~1 mm/s2."""
+    import dataclasses
     best = None
+    def take(leg, label):
+        nonlocal best
+        if leg is not None and (best is None or leg['mf_kg'] > best['mf_kg']):
+            leg['found_by'] = label; best = leg
     sfs = sims_flanagan(origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep, vinf_arr, nseg, starts, seed)
     for sf in sfs:                                    # every feasible Sims-Flanagan solution seeds a refinement
         leg = zero_order_hold(sf, origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep, vinf_arr)
-        if leg is not None and (best is None or leg['mf_kg'] > best['mf_kg']):
-            leg['seed_sims_flanagan_fuel_kg'] = sf['fuel_kg']; best = leg
-    if best is not None:
+        if leg is not None:
+            leg['seed_sims_flanagan_fuel_kg'] = sf['fuel_kg']
+        take(leg, 'search')
+    if ship.thrust_n / m0 > 2 * A_REF:
+        ref = dataclasses.replace(ship, thrust_n=A_REF * m0)
+        r = heliocentric(origin, target, ref, m0, t0_bounds, tof_bounds, vinf_dep, vinf_arr, nseg, starts, seed)
+        if r is not None:
+            x = ([r['t0_mjd2000'], r['mf_kg']] + list(r['vinf_dep_vec_ms']) + list(r['vinf_arr_vec_ms'])
+                 + [c / ship.thrust_n for T in r['thrust_n'] for c in T] + [r['tof_days']])
+            leg = zero_order_hold({'x': x, 'nseg': nseg}, origin, target, ship, m0, t0_bounds, tof_bounds, vinf_dep, vinf_arr)
+            if leg is not None:
+                leg['continuation_reference_dv_kms'] = r['dv_equivalent_kms']
+            take(leg, f'continuation from {1000 * A_REF:g} mm/s2')
+    if best is not None and sfs:
         best['best_sims_flanagan_fuel_kg'] = sfs[0]['fuel_kg']     # cross-check: the other transcription's optimum
     return best
 
@@ -178,21 +248,28 @@ def independent_check(t0, tof_days, vdep, varr, thrust, mf, ship, m0, pls, plf):
             'mass_error_kg': float(y[6] - mf), 'integrated_final_mass_kg': float(y[6])}
 
 def planet_side(node, ship, mass_kg):
-    """between the node's parking orbit and escape (zero excess speed): an impulsive Oberth burn when it lasts at most
-    FINITE_BURN_LIMIT of the parking-orbit period, otherwise the Edelbaum spiral.
-    Returns (mode, dv km/s, days, fuel kg, mass after kg); mode is 'burn', 'spiral' or 'none'."""
+    """between the node's parking orbit and escape (zero excess speed), as conventions.planet_side_plan decides:
+    one Oberth burn, the same burn split over perigee passes (plus the time on the intermediate orbits), or the
+    Edelbaum spiral. Returns (mode, dv km/s, days, fuel kg, mass after kg); mode 'burn', 'passes', 'spiral' or 'none'."""
     e = end_state(node)
     if e['kind'] != 'parking':
         return 'none', 0.0, 0.0, 0.0, mass_kg
+    mode, n = planet_side_plan(node, mass_kg, ship.ve_kms, ship.mdot_kgs)
+    if mode == 'spiral':
+        return ('spiral',) + spiral(node, ship, mass_kg)
     dv = math.sqrt(2 * e['mu'] / e['r']) - math.sqrt(e['mu'] / e['r'])
     m1 = mass_kg * math.exp(-dv / ship.ve_kms)
-    if (mass_kg - m1) / ship.mdot_kgs <= FINITE_BURN_LIMIT * parking_period_s(node):
-        return 'burn', dv, (mass_kg - m1) / ship.mdot_kgs / DAY, mass_kg - m1, m1
-    return ('spiral',) + spiral(node, ship, mass_kg)
+    days = (mass_kg - m1) / ship.mdot_kgs / DAY + pass_days(node, n)
+    return mode, dv, days, mass_kg - m1, m1
 
-def transfer(origin, target, ship, t0_bounds, tof_bounds, vinf_dep=0.0, nseg=24, starts=8, seed=1):
+def segments(ship, m0):
+    """24 segments for weak engines; 48 from 1 mm/s2 of initial acceleration, where burns are shorter"""
+    return 48 if ship.thrust_n / m0 >= 1e-3 else 24
+
+def transfer(origin, target, ship, t0_bounds, tof_bounds, vinf_dep=0.0, nseg=None, starts=8, seed=1):
     """full low-thrust transfer: departure spiral, heliocentric leg, capture spiral; mass carried through all three"""
     m0 = ship.mass(ship.fuel_capacity_kg)
+    nseg = nseg or segments(ship, m0)
     mode1, dv1, days1, fuel1, m1 = ('kick', 0.0, 0.0, 0.0, m0) if vinf_dep > 0 else planet_side(origin, ship, m0)
     # the window bounds the departure from the parking orbit; the heliocentric leg starts after the spiral
     t0_bounds = (t0_bounds[0] + days1, t0_bounds[1] + days1)

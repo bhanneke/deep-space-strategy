@@ -94,7 +94,9 @@ $('q').onsubmit = async e => {
 };
 function detail({ ship, x }) {
   let h = `<h3 style="margin:0 0 6px">${esc(ship.name)}, ${esc(x.model)}</h3>`;
-  if (x.legs) h += x.legs.map(l => `<div class="it">${l.depart} ${esc(l.from_name)} → ${esc(l.to_name)} arrives ${l.arrive} (${l.tof_days} d) · burns ${l.dv_departure} + ${l.dv_arrival} km/s · fuel ${t(l.fuel_before_kg)} → ${t(l.fuel_after_kg)} t${l.refuelled_before ? ' · refuelled before leaving' : ''}</div>`).join('');
+  if (x.legs) h += x.legs.map(l => `<div class="it">${l.depart} ${esc(l.from_name)} → ${esc(l.to_name)} arrives ${l.arrive} (${l.tof_days} d) · burns ${l.dv_departure} + ${l.dv_arrival} km/s · fuel ${t(l.fuel_before_kg)} → ${t(l.fuel_after_kg)} t${l.refuelled_before ? ' · refuelled before leaving' : ''}</div>`
+    + (l.stages && l.stages.some(g => g.stage !== 'departure burn' && g.stage !== 'arrival burn')
+      ? `<div class="it note">${l.stages.map(g => `${esc(g.stage)} ${g.dv_kms} km/s, ${g.days < 1 ? (24 * g.days).toFixed(1) + ' h' : g.days.toFixed(1) + ' d'}`).join(' · ')}${l.pass_days && (l.pass_days[0] || l.pass_days[1]) ? ` · time on intermediate orbits ${l.pass_days.map(d => d.toFixed(2)).join(' + ')} d` : ''} · heliocentric burns ${(100 * l.heliocentric_burn_share).toFixed(1)}% of the flight</div>` : '')).join('');
   if (x.phases) h += x.phases.map(p => `<div class="it">${esc(p.phase)} (${p.kind}): ${p.dv_kms.toFixed(2)} km/s, ${p.days.toFixed(0)} d, ${t(p.fuel_kg)} t fuel</div>`).join('')
     + `<p class="note" style="margin-top:6px">Independent check of the continuous-thrust leg: an integration of its thrust profile ends ${x.check.position_error_km.toFixed(1)} km and ${x.check.velocity_error_ms.toFixed(3)} m/s from the target, mass off by ${x.check.mass_error_kg.toFixed(2)} kg. Excess speed left as numerical slack at departure and arrival: ${x.vinf_slack_ms.join(' and ')} m/s.${x.cached ? ' From the cache.' : ''}</p>`;
   if (x.warnings && x.warnings.length) h += `<p class="note bad">${x.warnings.map(esc).join('<br>')}</p>`;

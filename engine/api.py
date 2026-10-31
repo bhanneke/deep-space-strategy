@@ -112,10 +112,12 @@ def compare(q: Query):
     out = []
     for s in q.ships:
         ship = Ship(**s.model_dump())
-        if ship.low_thrust and (q.origin == 'eml1' or q.destination == 'eml1'):
-            rows = [{'model': 'continuous thrust', 'feasible': False, 'reason': 'continuous-thrust transfers start and end at sites, not at L1'}]
-        else:
-            rows = lowthrust_rows(q, ship) if ship.low_thrust else impulsive_rows(q, ship)
+        rows = impulsive_rows(q, ship)               # short burns: valid legs only (journey.IMPULSIVE_SHARE)
+        if ship.low_thrust:
+            if q.origin == 'eml1' or q.destination == 'eml1':
+                rows += [{'model': 'continuous thrust', 'feasible': False, 'reason': 'continuous-thrust transfers start and end at sites, not at L1'}]
+            else:
+                rows += lowthrust_rows(q, ship)
         out.append({'ship': ship.to_dict(), 'dv_capacity_kms': round(ship.dv_capacity_kms(), 3), 'results': rows})
     return {'query': q.model_dump(), 'ships': out}
 

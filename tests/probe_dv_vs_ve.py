@@ -11,6 +11,6 @@ for a0 in (0.25e-3, 2e-3, 20e-3):                          # m/s^2
     for isp in (2000, 4000, 10000):
         ship = Ship('probe', dry_kg=10000, payload_kg=10000, fuel_capacity_kg=20000, thrust_n=a0 * M0, isp_s=isp)
         t = time.time()
-        leg = LT.heliocentric('earth', 'mars', ship, M0, (10600, 10900), (300, 1200), nseg=24, starts=8)
+        leg = LT.heliocentric('earth', 'mars', ship, M0, (10600, 10900), (300, 1200), nseg=LT.segments(ship, M0), starts=8)
         row.append(f"Isp {isp}: {leg['dv_equivalent_kms']:.3f} km/s, {leg['tof_days']:.0f} d" if leg else f'Isp {isp}: none')
     print(f'a0 {1000 * a0:g} mm/s2 | ' + ' | '.join(row), flush=True)
