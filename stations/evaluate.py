@@ -7,11 +7,14 @@
 #   supply     cheapest cost of delivering propellant to the station from the sources a technology state allows
 # Waiting: every cost is the minimum over departures within the next 120 days. Journeys are chronological: an onward leg
 # from a station leaves at or after the ship's arrival there (flight times from precompute.py).
-import json, sys
+import base64, json, sys
 import numpy as np
 
 W = 4                                      # 4 x 30 days of waiting for stations
-VE = {'methane/oxygen': 3.7, 'hydrogen/oxygen': 4.4, 'nuclear thermal': 8.5}
+G0 = 9.80665e-3                           # km/s^2
+VE = {'methane/oxygen': 370 * G0, 'hydrogen/oxygen': 450 * G0, 'nuclear thermal': 900 * G0}   # Isp as in engine/ship.py
+# fuel saved for any engine: the page interpolates linearly in log(exhaust speed) on this grid (Isp ~200 to ~20,000 s)
+VE_GRID = np.geomspace(2.0, 200.0, 41)
 SOURCES = [                                # cumulative propellant-source ladder
     ('Earth only', []),
     ('+ lunar ice', ['moon']),
@@ -154,10 +157,20 @@ def main(root):
     Dd = D[e][None, :, :]                               # Earth -> destination, direct
     out_e = OUT_AFTER[e]                                # station -> destination, leaving after the ship has arrived
     ok = (din < Dd) & (out_e < Dd)
-    single = {}
-    for name, ve in VE.items():
-        L = np.nan_to_num(np.where(ok, 1 - np.exp(-(Dd - din) / ve), 0.0)[:, dest, :])
-        single[name] = np.round(L.mean(axis=(1, 2)), 4).tolist()
+    saved = np.where(ok, Dd - din, np.nan)[:, dest, :]           # km/s the station saves per trip and date
+    def fuel_saved(ve):
+        return np.nan_to_num(1 - np.exp(-saved / ve)).mean(axis=(1, 2))
+    single = {name: np.round(fuel_saved(ve), 4).tolist() for name, ve in VE.items()}
+    grid = np.stack([fuel_saved(ve) for ve in VE_GRID], axis=1)   # [candidate, grid point]
+    def interp(ve):
+        x = np.log(VE_GRID); u = np.clip(np.searchsorted(x, np.log(ve)) - 1, 0, len(x) - 2)
+        w = (np.log(ve) - x[u]) / (x[u + 1] - x[u])
+        return grid[:, u] * (1 - w) + grid[:, u + 1] * w
+    interp_err = max(float(np.abs(interp(ve) - fuel_saved(ve)).max()) for ve in np.geomspace(2.05, 195.0, 57))
+    assert interp_err < 0.002, interp_err                        # absolute error in the share of fuel saved
+    q = np.round(np.clip(grid, 0, 1) * 65535).astype('<u2')
+    value_grid = {'ve': np.round(VE_GRID, 5).tolist(), 'n': int(n), 'scale': 65535, 'max_interp_error': round(interp_err, 5),
+                  'u16': base64.b64encode(q.tobytes()).decode()}   # row-major [candidate][grid point]
 
     # refuelling network: every trip between two sites may stop once at a station of the set; a trip costs the
     # longer of its two legs, or the direct trip if that is cheaper. A set of k stations minimises the mean over
@@ -205,9 +218,10 @@ def main(root):
            'candidates': cands,
            'reach': np.round(reach, 3).tolist(), 'control': np.round(ctrl, 4).tolist(),
            'supply': {k: np.round(v, 3).tolist() for k, v in supply.items()},
-           'value': single, 'network': {'base_mean': round(base, 3), 'single_gain': np.round(gain1, 4).tolist(), 'sets': sets, 'qubo': qubo}}
+           'value': single, 'value_grid': value_grid, 'network': {'base_mean': round(base, 3), 'single_gain': np.round(gain1, 4).tolist(), 'sets': sets, 'qubo': qubo}}
     json.dump(out, open(f'{root}/stations/stations.json', 'w'), separators=(',', ':'))
     print('network base', round(base, 2), [(x['k'], x['mean_leg'], [cands[c].get('name') or (cands[c]['a'], cands[c]['e'], cands[c]['i']) for c in x['stations']]) for x in sets])
+    print('fuel-saved interpolation, largest error', round(interp_err, 5))
     print('fuel saved top', [(cands[c].get('name') or cands[c]['a'], single['hydrogen/oxygen'][c]) for c in np.argsort(-np.array(single['hydrogen/oxygen']))[:3]])
     print('reach best', [(cands[c]['a'], cands[c]['e'], round(float(reach[c]), 2)) for c in np.argsort(reach)[:3]])
     print('control best', [(cands[c]['a'], cands[c]['e'], round(float(ctrl[c]), 3)) for c in np.argsort(-ctrl)[:3]])

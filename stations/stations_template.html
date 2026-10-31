@@ -49,7 +49,8 @@ tr.sel td{color:var(--sun)}
 <div class="controls">
   <div class="grp"><span class="lbl">Objective</span><select id="obj" aria-label="Objective">
     <option value="network">Refuelling stops between sites</option><option value="value">Fuel saved on trips from Earth</option><option value="reach">Reach to all sites</option></select></div>
-  <div class="grp"><span class="lbl">Engine</span><select id="ve" aria-label="Engine"></select></div>
+  <div class="grp"><span class="lbl">Engine</span><select id="ve" aria-label="Engine"></select>
+    <label class="lbl" for="isp">Isp, s</label><input id="isp" type="number" min="200" max="20000" step="10" value="450" aria-label="Specific impulse in seconds" style="width:7em"></div>
   <div class="grp"><span class="lbl">Propellant sources</span><select id="src" aria-label="Propellant sources"></select></div>
   <div class="grp" id="kgrp"><span class="lbl">Stations</span><select id="k" aria-label="Number of stations"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select></div>
 </div>
@@ -66,9 +67,22 @@ const D = JSON.parse(document.getElementById('stn-data').textContent);
 const C = D.candidates, N = C.length, $ = id => document.getElementById(id);
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-$('ve').innerHTML = Object.entries(D.meta.ve).map(([k, v]) => `<option value="${k}" ${k === 'hydrogen/oxygen' ? 'selected' : ''}>${k}, ${v} km/s</option>`).join('');
+// fuel saved for any engine: linear interpolation in log(exhaust speed) on the precomputed grid
+const G0 = 9.80665e-3, VG = D.value_grid, VX = VG.ve.map(Math.log), NG = VX.length;
+const VQ = (() => { const b = atob(VG.u16), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Uint16Array(u.buffer); })();
+const ENGINES = [['Methane/oxygen', 370], ['Hydrogen/oxygen', 450], ['Nuclear thermal', 900], ['Your own engine', null]];
+$('ve').innerHTML = ENGINES.map(([k, isp], i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${k}${isp ? `, Isp ${isp} s` : ''}</option>`).join('');
+let vCache = null;
+function valueAt(isp) {
+  if (vCache && vCache.isp === isp) return vCache.v;
+  const x = Math.log(Math.min(Math.max(isp * G0, VG.ve[0]), VG.ve[NG - 1]));
+  let u = 0; while (u < NG - 2 && VX[u + 1] < x) u++;
+  const w = (x - VX[u]) / (VX[u + 1] - VX[u]), v = new Array(N);
+  for (let c = 0; c < N; c++) v[c] = (VQ[c * NG + u] * (1 - w) + VQ[c * NG + u + 1] * w) / VG.scale;
+  vCache = { isp, v }; return v;
+}
 $('src').innerHTML = D.meta.sources.map((s, i) => `<option value="${s}" ${i === 1 ? 'selected' : ''}>${s}</option>`).join('');
-const state = { obj: 'network', ve: 'hydrogen/oxygen', src: D.meta.sources[1], k: 2 };
+const state = { obj: 'network', isp: 450, src: D.meta.sources[1], k: 2 };
 
 const per = c => Math.pow(C[c].a, 1.5);
 const label = c => C[c].name || `Solar orbit a ${C[c].a.toFixed(1)} AU, e ${C[c].e}, i ${C[c].i}°`;
@@ -76,7 +90,7 @@ const range = c => C[c].name ? `${C[c].a} AU (with ${C[c].site === 'eml1' ? 'Ear
 
 // score per candidate for the chosen objective; higher is better everywhere (reach is a cost, so ranking uses its negative)
 function scores() {
-  if (state.obj === 'value') return D.value[state.ve];
+  if (state.obj === 'value') return valueAt(state.isp);
   if (state.obj === 'reach') return D.reach.map(x => -x);
   return D.network.single_gain;
 }
@@ -147,17 +161,21 @@ function drawTable(picks, setValue) {
   const rows = picks.map((c, i) => `<tr class="sel"><td>${i + 1}</td><td>${label(c)}</td><td>${range(c)}</td><td>${per(c).toFixed(2)} yr</td><td>${shown(c, s[c])}</td><td>${sup[c].toFixed(2)} km/s</td><td>${C[c].name ? '–' : C[c].M0 + '° past perihelion'}</td></tr>`).join('');
   $('tbl').innerHTML = head + rows;
   $('tableTitle').textContent = state.obj === 'network' ? `Best set of ${state.k} station${state.k > 1 ? 's' : ''}: the average longer leg falls from ${D.network.base_mean.toFixed(1)} to ${setValue.toFixed(1)} km/s` : `Top ${state.k} location${state.k > 1 ? 's' : ''} by ${state.obj === 'reach' ? 'reach' : 'fuel saved on trips from Earth'}`;
-  $('msg').textContent = state.obj === 'value' && state.src === D.meta.sources[0] ? 'With Earth as the only propellant source, a station saves no fuel launched from Earth. Choose another propellant source to see the savings.' : '';
+  $('msg').textContent = state.obj === 'value' && state.src === D.meta.sources[0] ? 'With Earth as the only propellant source, a station saves no fuel launched from Earth. Choose another propellant source to see the savings.'
+    : state.obj === 'value' && state.isp > 1500 ? 'Engines with an Isp above about 1,500 s are electric today and thrust for months. These scores assume short burns and therefore understate the Δv such ships need. The routing engine computes continuous-thrust paths for them.' : '';
 }
 
 function render() {
   $('kgrp').querySelector('.lbl').textContent = state.obj === 'network' ? 'Stations' : 'Show top';
-  $('ve').disabled = state.obj !== 'value';
+  $('ve').disabled = $('isp').disabled = state.obj !== 'value';
   const { picks, setValue } = selection();
   drawMap(picks); drawChart(picks); drawTable(picks, setValue);
-  $('defs').innerHTML = `<strong>Refuelling stops between sites:</strong> every trip between two of the 12 sites may refuel once at a station of the set; the trip then costs its longer leg, or the direct trip if that is cheaper. The best set minimises the average over all trips and dates, so two stations close together add little. <strong>Fuel saved on trips from Earth:</strong> ${esc(D.meta.objectives.value)}; the engine choice changes this objective only. <strong>Reach:</strong> ${esc(D.meta.objectives.reach)}. <strong>Supply cost:</strong> ${esc(D.meta.objectives.supply)}. Departure dates every 30 days from 2027 for 20 years, with up to 120 days of waiting. Method and formulas: <a href="technical.html#hubs">technical documentation</a>.`;
+  $('defs').innerHTML = `<strong>Refuelling stops between sites:</strong> every trip between two of the 12 sites may refuel once at a station of the set; the trip then costs its longer leg, or the direct trip if that is cheaper. The best set minimises the average over all trips and dates, so two stations close together add little. <strong>Fuel saved on trips from Earth:</strong> ${esc(D.meta.objectives.value)}; the engine choice changes this objective only. Exhaust speed = Isp × 9.81 m/s; the page interpolates the score between 41 precomputed exhaust speeds from 2 to 200 km/s (largest error ${(100 * VG.max_interp_error).toFixed(2)} percentage points). <strong>Reach:</strong> ${esc(D.meta.objectives.reach)}. <strong>Supply cost:</strong> ${esc(D.meta.objectives.supply)}. Departure dates every 30 days from 2027 for 20 years, with up to 120 days of waiting. Method and formulas: <a href="technical.html#hubs">technical documentation</a>.`;
 }
-for (const id of ['obj', 've', 'src', 'k']) $(id).addEventListener('change', e => { state[id] = id === 'k' ? +e.target.value : e.target.value; render(); });
+for (const id of ['obj', 'src', 'k']) $(id).addEventListener('change', e => { state[id] = id === 'k' ? +e.target.value : e.target.value; render(); });
+$('ve').addEventListener('change', e => { const isp = ENGINES[+e.target.value][1]; if (isp) { $('isp').value = isp; state.isp = isp; } else $('isp').focus(); render(); });
+$('isp').addEventListener('input', e => { const v = +e.target.value; if (!(v >= 200 && v <= 20000)) return; state.isp = v;
+  const i = ENGINES.findIndex(x => x[1] === v); $('ve').value = String(i >= 0 ? i : ENGINES.length - 1); render(); });
 const tip = $('tip');
 $('chart').addEventListener('mousemove', e => {
   const c = e.target.dataset && e.target.dataset.c; if (c == null) { tip.style.display = 'none'; return; }
