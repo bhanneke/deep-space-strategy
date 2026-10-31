@@ -370,8 +370,8 @@ function dossier(b) {
 }
 function renderPanel() {
   const b = state.sel && BY[state.sel];
-  $('panel').innerHTML = b ? dossier(b) : state.journey ? journeyPanel() : (state.routeFrom ? routesPanel() : intro());
-  bindRoutes(); if (state.journey && !b) bindJourney();
+  $('panel').innerHTML = b ? dossier(b) : state.journey ? tabs() + (state.jTab === 'cargo' ? cargoPanel() : journeyPanel()) : (state.routeFrom ? routesPanel() : intro());
+  bindRoutes(); if (state.journey && !b) { bindTabs(); if (state.jTab === 'cargo') bindCargo(); else bindJourney(); }
   $('panel').querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', () => select(el.dataset.open)));
   const back = $('btnBack'); if (back) back.addEventListener('click', () => { select(null); resetView(); });
   for (const [id, l] of Object.entries(labels)) l.classList.toggle('sel', id === state.sel);
@@ -712,7 +712,7 @@ function journeyArcs() {
   return ARCS;
 }
 // mode 'tank': no refuelling, total delta-v within budget B. mode 'refuel': every leg within B, stops only where propellant exists.
-function planJourney(from, to, k0, mode, B, years) {
+function planJourney(from, to, k0, mode, B, years, edgeCost, combine) {
   const live = activeStations(), off = i => i >= NSITE && !live.has(SITE_IDS[i]);
   const arcs = journeyArcs(), ns = SITE_IDS.length, kEnd = Math.min(NET.meta.n - 1, k0 + Math.round(years * 365.25 / NET.meta.step_days));
   const span = kEnd - k0 + 1, best = new Float64Array(span * ns).fill(Infinity), back = new Array(span * ns).fill(null);
@@ -732,7 +732,7 @@ function planJourney(from, to, k0, mode, B, years) {
         if (e.cost > B) continue;
         if (e.v !== dst && !REFUEL.has(SITE_IDS[e.v]) && !live.has(SITE_IDS[e.v])) continue;
       }
-      const c = c0 + e.cost; if (mode === 'tank' && c > B) continue;
+      const ec = edgeCost ? edgeCost(e) : e.cost, c = combine === 'max' ? Math.max(c0, ec) : c0 + ec; if (mode === 'tank' && c > B) continue;
       const t = at(e.k2, e.v);
       if (c < best[t]) { best[t] = c; back[t] = e; }
     }
@@ -743,6 +743,7 @@ function planJourney(from, to, k0, mode, B, years) {
   let cheapK = null;
   for (let k = k0; k <= kEnd; k++) if (best[at(k, dst)] < Infinity && (cheapK == null || best[at(k, dst)] < best[at(cheapK, dst)] - 1e-9)) cheapK = k;
   return {
+    arrivals: { k0, kEnd, cost: k => best[at(k, dst)], legs: trace },
     earliest: earliest == null ? null : { k: earliest, dv: best[at(earliest, dst)], legs: trace(earliest) },
     cheapest: cheapK == null ? null : { k: cheapK, dv: best[at(cheapK, dst)], legs: trace(cheapK) },
   };
@@ -816,6 +817,104 @@ function updateStationMarkers() {
 }
 $('btnJourney').addEventListener('click', () => { state.journey = !state.journey; $('btnJourney').setAttribute('aria-pressed', state.journey); if (state.journey) state.sel = null; renderPanel(); });
 
+/* ---------- round trips with cargo ---------- */
+// A freighter flies from its home port to a source, loads for a while and returns with cargo. The return trip uses one
+// tank (stations on the way may refuel it). Cargo follows from the rocket equation: of the mass that leaves the source,
+// exp(-dv/ve) arrives, and the empty ship takes a fixed share of the departure mass.
+const MAKES_FUEL = new Set(['mars', 'ceres', '101955', '162173']);      // sources with water ice or hydrated minerals
+const AERO_LIMIT = { earth: 6.0 }, AERO_TRIM = 0.1;                       // assumption: aerocapture up to 6 km/s arrival speed
+const PARK_E = { mu: 398600.4, r: 6378 + 300 };
+function vinfFromLeoBurn(burn) { const vc = Math.sqrt(PARK_E.mu / PARK_E.r); return Math.sqrt(Math.max((burn + vc) ** 2 - 2 * PARK_E.mu / PARK_E.r, 0)); }
+function legArrivalBurn(e) {                     // the capture burn at Earth inside a direct or station leg, and its excess speed
+  if (SITE_IDS[e.v] !== 'earth' || e.kind === 'slingshot') return null;
+  const arr = e.kind === 'direct' ? ROUTES[SITE_IDS[e.u] + '>earth'].arr[e.k] : null;
+  return arr == null ? null : { arr, vinf: vinfFromLeoBurn(arr) };
+}
+function brakeCost(e, braking) {                  // edge cost with aerocapture at Earth where the arrival speed allows it
+  const a = braking === 'aero' && legArrivalBurn(e);
+  return a && a.vinf <= AERO_LIMIT.earth ? e.cost - a.arr + AERO_TRIM : e.cost;
+}
+Object.assign(state, { cHome: 'earth', cSrc: 'ceres', cStay: 180, cBrake: 'aero', cVe: 4.4, cDry: 0.10, cResult: null });
+function planRoundTrip() {
+  const k0 = Math.max(0, kOf(state.jd));
+  const out = planJourney(state.cHome, state.cSrc, k0, 'refuel', state.jB, 15).earliest;
+  if (!out) return { error: 'No outbound journey within the per-leg budget in 15 years.' };
+  const kLoad = out.k + Math.ceil(state.cStay / NET.meta.step_days), kStart = out.legs[0].k;
+  const cost = e => brakeCost(e, state.cBrake);
+  // two ways home: one tank for the whole return, or a refuel at every stop that has fuel (then the hardest leg limits cargo)
+  const ways = [{ how: 'tank', a: planJourney(state.cSrc, state.cHome, kLoad, 'tank', 99, 15, cost).arrivals },
+                { how: 'refuel', a: planJourney(state.cSrc, state.cHome, kLoad, 'refuel', 99, 15, cost, 'max').arrivals }];
+  let pick = null;
+  for (const w of ways) for (let k = w.a.k0; k <= w.a.kEnd; k++) {
+    const c = w.a.cost(k); if (!(c < Infinity)) continue;      // c: total cost (one tank) or hardest leg (refuelling)
+    const share = Math.exp(-c / state.cVe) - state.cDry, years = (jdOfK(k) - jdOfK(kStart)) / 365.25;
+    const perYear = share / state.cDry / years;
+    if (!pick || perYear > pick.perYear) pick = { k, c, share, perYear, years, how: w.how, a: w.a };
+  }
+  if (!pick) return { error: 'No return journey found in 15 years after loading.' };
+  const legs = pick.a.legs(pick.k);
+  const ret = { k: pick.k, dvBrake: legs.reduce((t, e) => t + cost(e), 0), hardest: Math.max(...legs.map(cost)), how: pick.how, legs };
+  // without water at the source, the fuel for the first return segment comes along on the outbound trip: it leaves the last
+  // outbound refuelling stop and pays that leg's rocket equation on the way out
+  const fuelLocal = MAKES_FUEL.has(state.cSrc);
+  let carriedPerCargo = null;
+  if (!fuelLocal && pick.share > 0) {
+    const first = pick.how === 'refuel' ? cost(legs[0]) : ret.dvBrake, lastOut = out.legs[out.legs.length - 1].cost;
+    const fuel1 = 1 - Math.exp(-first / state.cVe);                    // share of the departure mass at the source
+    carriedPerCargo = fuel1 * Math.exp(lastOut / state.cVe) / pick.share;
+  }
+  return { out, ret, keep: Math.exp(-pick.c / state.cVe), cargoShare: pick.share, perShip: pick.share / state.cDry, perYear: Math.max(0, pick.perYear),
+           days: pick.years * 365.25, fuelLocal, carriedPerCargo, bottleneck: pick.c };
+}
+function cargoPanel() {
+  const opt = (sel, ids) => ids.map(id => `<option value="${id}" ${id === sel ? 'selected' : ''}>${esc(nodeName(id))}</option>`).join('');
+  const r = state.cResult;
+  const legLine = e => `<div class="meta">${isoOf(jdOfK(e.k))} · ${esc(nodeName(SITE_IDS[e.u]))} to ${esc(nodeName(SITE_IDS[e.v]))} · ${e.cost.toFixed(2)} km/s · ${e.tof} days</div>`;
+  let res = '';
+  if (r && r.error) res = `<p class="caveat">${esc(r.error)}</p>`;
+  else if (r) {
+    const sh = (100 * r.cargoShare).toFixed(0);
+    res = `<p><strong>Round trip ${isoOf(jdOfK(r.out.legs[0].k))} to ${isoOf(jdOfK(r.ret.k))}</strong>, ${(r.days / 365.25).toFixed(1)} years.</p>
+      <h3>Out</h3>${r.out.legs.map(legLine).join('')}
+      <h3>Back with cargo</h3>${r.ret.legs.map(legLine).join('')}
+      <p>The return costs ${r.ret.dvBrake.toFixed(2)} km/s with ${state.cBrake === 'aero' ? 'aerocapture at Earth where the arrival speed allows it' : 'a capture burn into low Earth orbit'}${r.ret.how === 'refuel' && r.ret.legs.length > 1 ? `; the ship refuels at each stop, so its hardest leg (${r.ret.hardest.toFixed(2)} km/s) sets the cargo` : ''}.
+      ${r.cargoShare > 0 ? `Cargo makes up ${sh}% of the mass that leaves ${esc(nodeName(state.cSrc))}: each tonne of ship brings back ${r.perShip.toFixed(1)} tonnes per round trip, ${r.perYear.toFixed(1)} tonnes per year.` : `At this engine and ship mass, the return fuel leaves no room for cargo.`}
+      ${r.fuelLocal ? `${esc(nodeName(state.cSrc))} has water, so the ship refuels there.` : `${esc(nodeName(state.cSrc))} has no known water, so the ship brings the fuel for the first return leg from its last outbound stop: ${r.carriedPerCargo == null ? 'with no cargo room this route does not pay' : `${r.carriedPerCargo.toFixed(1)} tonnes of fuel leave that stop for every tonne of cargo`}.`}</p>`;
+  }
+  const homes = ['earth', 'mars'].concat(state.jStations ? [...activeStations()] : []);
+  const srcs = ['mars', 'ceres', 'vesta', 'psyche', '433', '101955', '162173', 'jupiter'];
+  return `<div><h2>Round trip with cargo</h2><p class="caveat">A freighter flies out, loads at the source and returns with cargo. The outbound journey is the earliest within the per-leg budget and the stations set in the Journey tab. For the return the planner compares one tank for the whole way with a refuel at every stop that has fuel (sites with water and the stations you add), and picks the route and date that bring the most cargo per tonne of ship and per year.</p></div>
+    <div class="jform">
+      <label>Home <select id="cHome">${opt(state.cHome, homes)}</select></label>
+      <label>Source <select id="cSrc">${opt(state.cSrc, srcs)}</select></label>
+      <label>Loading time <select id="cStay">${[90, 180, 365, 730].map(v => `<option value="${v}" ${v === state.cStay ? 'selected' : ''}>${v} days</option>`).join('')}</select></label>
+      <label>Braking at Earth <select id="cBrake"><option value="aero" ${state.cBrake === 'aero' ? 'selected' : ''}>aerocapture</option><option value="burn" ${state.cBrake === 'burn' ? 'selected' : ''}>capture burn</option></select></label>
+      <label>Engine <select id="cVe">${[[3.7, 'methane/oxygen'], [4.4, 'hydrogen/oxygen'], [8.5, 'nuclear thermal']].map(([v, n]) => `<option value="${v}" ${v === state.cVe ? 'selected' : ''}>${n}, ${v} km/s</option>`).join('')}</select></label>
+      <label>Empty ship <select id="cDry">${[0.05, 0.10, 0.15, 0.20].map(v => `<option value="${v}" ${v === state.cDry ? 'selected' : ''}>${Math.round(v * 100)}% of departure mass</option>`).join('')}</select></label>
+      <button type="button" id="cPlan">Plan round trip</button>
+    </div>
+    <div>${res}</div>
+    <p class="caveat">Aerocapture: the ship brakes in Earth's atmosphere when it arrives at up to ${AERO_LIMIT.earth} km/s excess speed, then spends ${AERO_TRIM} km/s to raise its orbit. This limit is a solmaps assumption; we still have to check it against published aerocapture studies. Slingshot legs keep their capture burn for now.</p>`;
+}
+function bindCargo() {
+  const P = $('panel'), q = id => P.querySelector('#' + id);
+  if (!q('cPlan')) return;
+  for (const id of ['cHome', 'cSrc', 'cStay', 'cBrake', 'cVe', 'cDry']) q(id).addEventListener('change', e => { state[id] = ['cStay', 'cVe', 'cDry'].includes(id) ? +e.target.value : e.target.value; });
+  q('cPlan').addEventListener('click', () => {
+    state.cResult = state.cHome === state.cSrc ? { error: 'Home and source are the same place.' } : planRoundTrip();
+    if (!state.cResult.error) { state.jResult = { earliest: { k: state.cResult.ret.k, dv: 0, legs: state.cResult.out.legs.concat(state.cResult.ret.legs) } }; state.jShow = 'earliest'; drawJourney(); }
+    renderPanel();
+  });
+}
+
+function tabs() {
+  return `<div class="list" role="tablist"><button type="button" id="tabJ" aria-pressed="${state.jTab !== 'cargo'}">Journey</button><button type="button" id="tabC" aria-pressed="${state.jTab === 'cargo'}">Round trip with cargo</button></div>`;
+}
+function bindTabs() {
+  const P = $('panel'), j = P.querySelector('#tabJ'), c = P.querySelector('#tabC');
+  if (j) j.addEventListener('click', () => { state.jTab = 'journey'; renderPanel(); });
+  if (c) c.addEventListener('click', () => { state.jTab = 'cargo'; renderPanel(); });
+}
 // open with the travel network visible: routes from Earth
 state.routeFrom = 'earth'; $('routeFrom').value = 'earth';
 resize(); refreshGlyphs(); setJD(jdOf(TODAY)); renderPanel(); requestAnimationFrame(frame);
