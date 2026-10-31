@@ -1,30 +1,57 @@
 <title>Deep Space Strategy</title>
-<meta name="description" content="Deep Space Strategy: where the resources are, what it costs to reach them on any date, and which places become strongholds as humanity settles the solar system.">
+<meta name="description" content="Deep Space Strategy is the venue for strategic discourse on how humanity, and its AI, can colonize the solar system.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
 <link rel="stylesheet" href="page.css">
 <style>
+.hero{display:flex;flex-direction:column;gap:14px;padding:24px 0 8px}
+.hero h1{font-size:56px}
+.hero .lede{font-size:21px;color:var(--ink);max-width:34ch;line-height:1.4}
+.qs{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.qs li{background:var(--deck);border:1px solid var(--rule);border-left:3px solid var(--sun);border-radius:0 8px 8px 0;padding:12px 14px;font-size:15.5px;max-width:none}
+.qs li a{display:block;margin-top:6px;font-size:13.5px}
 .mod{display:grid;grid-template-columns:150px 1fr;gap:6px 18px;padding:14px 0;border-top:1px solid var(--rule)}
 .mod h3{font-family:var(--f-display);font-size:22px;letter-spacing:.05em;text-transform:uppercase;color:var(--sun);margin:0}
 .mod p{color:var(--dim);font-size:15px}
 .mod .links{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:15px}
 .mod .planned{color:var(--dim);font-style:italic}
-@media (max-width:560px){.mod{grid-template-columns:1fr}}
+.ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+@media (max-width:560px){.mod{grid-template-columns:1fr}.hero h1{font-size:42px}}
 </style>
 <main>
-  <h1>Deep Space Strategy</h1>
-  <p class="lede">Strategy for a settled solar system: where the resources are, what it costs to reach them on any date until 2100, and which places become strongholds as a result. Deep Space Strategy starts in Earth orbit and reaches the outer planets.</p>
-  <p class="exp"><strong>Experimental research prototype.</strong> The models simplify the physics (two-body orbits, impulsive burns, patched conics) and parts of the resource data rest on secondary sources. The numbers support comparisons between places, routes and dates. They are not mission designs.</p>
+  <div class="hero">
+    <h1>Deep Space Strategy</h1>
+    <p class="lede">The venue for strategic discourse on how humanity, and its AI, can colonize the solar system.</p>
+    <p>The discourse rests on physics and open data: where the resources are, what it costs to reach them on any date, and which places become strongholds as technology advances. Every number on this site comes from open code and cited sources, so any argument made here can be checked and challenged.</p>
+  </div>
 
-  <h2>Five modules</h2>
+  <h2>Open questions</h2>
+  <ul class="qs">
+    <li>Where should the first human-made stations sit, and which orbits gain value as technology advances?<a href="technical.html#limits">Station positioning</a></li>
+    <li>Which propellant sources change the map first: lunar ice, water asteroids, Mars or Ceres?<a href="growth-map.html">Hub leverage in the growth map</a></li>
+    <li>How does each step on the technology frontier, from chemical to nuclear and electric propulsion, reorder the strongholds?<a href="technical.html#hubs">Hubs and the rocket equation</a></li>
+    <li>What can machines and AI do where light-lag rules out control from Earth?<a href="technical.html#grounding">Scientific grounding</a></li>
+    <li>Which routes and nodes become chokepoints, and who governs them under the Outer Space Treaty and the Artemis Accords?<a href="technical.html#measures">Strategy measures</a></li>
+  </ul>
+
+  <h2>The evidence base</h2>
   <div class="mod"><h3>Geography</h3><div><p>Where every site is, how it moves, and how far it lies in light-time and gravity well.</p><div class="links"><a href="solar-system-3d.html">3D atlas</a></div></div></div>
   <div class="mod"><h3>Resources</h3><div><p>Water, metals, life-support elements and energy at each site, with evidence level and source.</p><div class="links"><a href="atlas.html">Resource atlas</a></div></div></div>
   <div class="mod"><h3>Topology</h3><div><p>The temporal transfer graph: route costs for every departure date, launch windows, slingshot routes and journeys.</p><div class="links"><a href="solar-system-3d.html">Routes in the 3D atlas</a><a href="growth-map.html">Growth map: routes and slingshots</a><a href="technical.html#graph">The graph, defined</a></div></div></div>
-  <div class="mod"><h3>Infrastructure</h3><div><p>Propellant hubs, depot orbits and the positioning of human-made stations.</p><div class="links"><a href="growth-map.html">Growth map: hubs and depots</a><a href="technical.html#hubs">Hub and depot formulas</a><span class="planned">station positioning (planned)</span></div></div></div>
-  <div class="mod"><h3>Strategy</h3><div><p>Strategic measures on the network, competing actors, doctrine and governance.</p><div class="links"><a href="technical.html#measures">Strategy measures</a><a href="technical.html#grounding">Scientific grounding</a><span class="planned">simulation and primer (planned)</span></div></div></div>
+  <div class="mod"><h3>Infrastructure</h3><div><p>Propellant hubs, depot orbits and the positioning of human-made stations.</p><div class="links"><a href="growth-map.html">Growth map: hubs and depots</a><a href="technical.html#hubs">Hub and depot formulas</a><span class="planned">station siting (in development)</span></div></div></div>
+  <div class="mod"><h3>Strategy</h3><div><p>Build-out strategies along the technology frontier, competing actors, doctrine and governance.</p><div class="links"><a href="technical.html#measures">Strategy measures</a><a href="technical.html#grounding">Scientific grounding</a><span class="planned">strategy module (in development)</span></div></div></div>
 
   <h2>The engine: solmaps</h2>
   <p>All modules run on <strong>solmaps</strong>, the open map and route engine of Deep Space Strategy: the resource dataset, the DE440 transfer network and the flyby search. <a href="how-it-works.html">How solmaps works</a> gives the overview and build steps; the <a href="technical.html">technical documentation</a> gives every definition, formula and reference.</p>
+
+  <h2>Take part</h2>
+  <div class="ways">
+    <a class="tool" href="https://github.com/bhanneke/deep-space-strategy/issues"><strong>Raise a question</strong><span>Challenge a result, propose a question or report an error as an issue in the open repository.</span></a>
+    <a class="tool" href="https://github.com/bhanneke/deep-space-strategy"><strong>Use the data</strong><span>Code under MIT, data and documentation under CC BY 4.0: reuse them in your own analysis and cite solmaps.</span></a>
+    <a class="tool" href="technical.html#refs"><strong>Read the grounding</strong><span>The literature on space strategy, logistics, trajectory design and governance that the work builds on.</span></a>
+  </div>
+
+  <p class="exp"><strong>Experimental research prototype.</strong> The models simplify the physics (two-body orbits, impulsive burns, patched conics) and parts of the resource data rest on secondary sources. The numbers support comparisons between places, routes and dates. They are not mission designs.</p>
   <p class="foot">Deep Space Strategy is a research programme by Björn Hanneke. Code (MIT) and data (CC BY 4.0) at <a href="https://github.com/bhanneke/deep-space-strategy">github.com/bhanneke/deep-space-strategy</a>.</p>
 </main>
