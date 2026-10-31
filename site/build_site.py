@@ -5,7 +5,7 @@ root = pathlib.Path(__file__).resolve().parent.parent
 docs = root / 'docs'
 docs.mkdir(exist_ok=True)
 
-for script in ('atlas/build.py', 'network/build.py', 'atlas3d/build.py'):
+for script in ('atlas/build.py', 'network/build.py', 'atlas3d/build.py', 'stations/build.py'):
     subprocess.run([sys.executable, str(root / script)], check=True)
 
 def wrap(html):
@@ -21,6 +21,7 @@ pages = {
     'atlas.html': root / 'atlas' / 'solar-system-atlas.html',
     'growth-map.html': root / 'network' / 'solar-system-growth-map.html',
     'solar-system-3d.html': root / 'atlas3d' / 'solar-system-3d.html',
+    'station-siting.html': root / 'stations' / 'station-siting.html',
 }
 for name, src in pages.items():
     (docs / name).write_text(wrap(src.read_text()))
