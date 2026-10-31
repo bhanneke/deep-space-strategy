@@ -4,22 +4,18 @@
 # relation, capture into the same parking orbits at planets, rendezvous at small bodies.
 # Planet positions: JPL DE440 (bodies.py), valid to about 2150.
 import json, math, sys, time
-sys.path.insert(0, '/work/flyby')
+sys.path.insert(0, '/work/flyby'); sys.path.insert(0, '/work')
 import pykep as pk, pygmo as pg
 import bodies
 
 ATLAS = bodies.load_atlas()
 OUT_OF_RANGE = 999.0                         # penalty, km/s: routes outside the ephemeris range
-# GM (km^3/s^2) and parking radius (km), same as network/nodes.js
-PARK = {'earth': (398600.4, 6378 + 300), 'mars': (42828.4, 3396 + 300), 'venus': (324858.6, 6052 + 300),
-        'mercury': (22031.8, 2440 + 200), 'jupiter': (126686534, 1882700), 'saturn': (37931187, 1221900),
-        'ceres': (62.63, 470 + 50)}
+# end states (parking orbit or rendezvous) from engine/conventions.py, shared with the network and the engine
+from engine.conventions import PARKING, planet_side_dv
+PARK = {k: (v['mu'], v['r']) for k, v in PARKING.items()}
 
-def park_burn(vinf, node):                   # km/s, burn between a parking orbit and a hyperbola
-    if node not in PARK:                     # small bodies: rendezvous, the burn equals the excess speed
-        return vinf
-    mu, r = PARK[node]
-    return math.sqrt(vinf * vinf + 2 * mu / r) - math.sqrt(mu / r)
+def park_burn(vinf, node):                   # km/s, burn between the node's end state and a hyperbola
+    return planet_side_dv(node, vinf)
 
 A = {'mercury': 0.387, 'venus': 0.723, 'earth': 1.0, 'mars': 1.524, 'ceres': 2.77, 'vesta': 2.36, 'psyche': 2.92, 'jupiter': 5.20, 'saturn': 9.54}
 def hohmann_days(a1, a2):

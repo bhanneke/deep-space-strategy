@@ -5,7 +5,7 @@
 # Output: stations/costs.npz (arrays [candidate, site, date] in km/s) and stations/candidates.json.
 import json, math, sys, time
 from multiprocessing import Pool
-sys.path.insert(0, '/work/flyby')
+sys.path.insert(0, '/work/flyby'); sys.path.insert(0, '/work')
 import numpy as np
 import pykep as pk
 import bodies
@@ -16,14 +16,9 @@ STEP, YEARS, NTOF = 30, 20, 12
 DATES = np.arange(0, YEARS * 365.25, STEP)
 # Earth-Moon L1 departure, as in the growth map: the cheaper of a burn at L1 and a drop to a 300 km perigee
 # followed by a perigee burn (Oberth). Patched-conic estimate; lunar flybys would do slightly better.
-GM_E, R_L1 = 398600.4, 0.84 * 384400
-V_ESC_L1, V_L1 = math.sqrt(2 * GM_E / R_L1), R_L1 * 2 * math.pi / (27.3217 * 86400)
-RP = 6378 + 300
-V_APO = math.sqrt(2 * GM_E * RP / (R_L1 * (R_L1 + RP))); V_PERI = V_APO * R_L1 / RP
+from engine.conventions import GM_E, planet_side_dv
 def from_eml1(vinf):
-    at_l1 = math.sqrt(vinf * vinf + V_ESC_L1 ** 2) - V_L1
-    via_perigee = (V_L1 - V_APO) + math.sqrt(vinf * vinf + 2 * GM_E / RP) - V_PERI
-    return min(at_l1, via_perigee)
+    return planet_side_dv('eml1', vinf)
 
 def candidates():
     out = []

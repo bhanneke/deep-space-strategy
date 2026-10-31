@@ -16,3 +16,5 @@ atlas3d/solar-system-3d.html
 stations/costs.npz
 stations/precompute.log
 stations/pairs.json
+data/
+.pytest_cache/

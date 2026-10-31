@@ -2,29 +2,24 @@
 # Same nodes, parking orbits, Oberth costs and flight-time grid; output keeps the network.json schema.
 import json, math, sys, time
 from multiprocessing import Pool
-sys.path.insert(0, '/work/flyby')
+sys.path.insert(0, '/work/flyby'); sys.path.insert(0, '/work')
 import numpy as np
 import pykep as pk
 import bodies
 
 AUD = 1731.456837                       # km/s per AU/day (used only for documentation parity)
 NODES = ['earth', 'venus', 'mercury', 'mars', 'ceres', 'vesta', 'psyche', '433', '101955', '162173', 'jupiter', 'saturn']
-# GM in km^3/s^2 (NASA NSSDC) and parking radius in km, as in network/nodes.js
-PARK = {'earth': (398600.4, 6378 + 300), 'mars': (42828.4, 3396 + 300), 'venus': (324858.6, 6052 + 300),
-        'mercury': (22031.8, 2440 + 200), 'jupiter': (126686534, 1882700), 'saturn': (37931187, 1221900), 'ceres': (62.63, 470 + 50)}
-PARK_LABEL = {'earth': 'low Earth orbit, 300 km', 'mars': 'low Mars orbit, 300 km', 'venus': 'low Venus orbit, 300 km',
-              'mercury': 'low Mercury orbit, 200 km', 'jupiter': 'circular orbit at Callisto distance',
-              'saturn': 'circular orbit at Titan distance', 'ceres': 'low Ceres orbit, 50 km'}
+# end states (parking orbit or rendezvous) come from engine/conventions.py, shared with the flyby search and the engine
+from engine.conventions import PARKING, planet_side_dv
+PARK = {k: (v['mu'], v['r']) for k, v in PARKING.items()}
+PARK_LABEL = {k: v['label'] for k, v in PARKING.items()}
 JD0 = 2461345.5                          # 2026-11-01
 JD1 = 2488433.5                          # 2100-12-31
 STEP, TOFS = 10, 30
 K2 = 2.9591220828e-4
 
 def well(vinf, node):
-    if node not in PARK:
-        return vinf
-    mu, r = PARK[node]
-    return math.sqrt(vinf * vinf + 2 * mu / r) - math.sqrt(mu / r)
+    return planet_side_dv(node, vinf)
 
 def mean_a(node, atlas):
     b = {x['id']: x for x in atlas['bodies']}[node]
