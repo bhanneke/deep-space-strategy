@@ -5,12 +5,12 @@ import json, sys, glob, os
 sys.path.insert(0, '/work/flyby')
 import numpy as np
 import pykep as pk
-import routes, bodies
+import routes, routes3, bodies
 
 NS = 80
 
 def main():
-    for f in sorted(glob.glob('/work/flyby/routes2_*.json')):
+    for f in sorted(glob.glob('/work/flyby/routes2_*.json') + glob.glob('/work/flyby/routes3_*.json')):
         rows = [r for r in json.load(open(f)) if r.get('feasible') and len(r['seq']) > 2 and 'x' in r]
         if not rows:
             continue
@@ -18,7 +18,7 @@ def main():
         for r in rows:
             y = int(r['bin'][:4])
             t0 = [pk.epoch(f'{y}-01-01').mjd2000, pk.epoch(f'{y + 2}-01-01').mjd2000]
-            prob = routes.Route(r['seq'], t0).inner
+            prob = (routes3.Route(r['seq'], t0, r['arrival']).no_arr if 'arrival' in r else routes.Route(r['seq'], t0).inner)
             eph = prob.get_eph_function(r['x'])
             x = r['x']; start = x[0]; end = start + x[5] + sum(x[9::4])          # exact epochs from the decision vector
             enc = [start]
@@ -30,7 +30,7 @@ def main():
             miss = float(np.linalg.norm(np.array(pts[-1][1:]) - np.array(tgt) / pk.AU))
             worst = max(worst, miss)
             out[f"{r['origin']}|{r['target']}|{r['launch_mjd2000']}|{'-'.join(r['seq'])}"] = pts
-        name = '/work/flyby/paths_' + os.path.basename(f)[len('routes2_'):]
+        name = '/work/flyby/paths_' + os.path.basename(f).split('_', 1)[1]
         json.dump(out, open(name, 'w'), separators=(',', ':'))
         print(os.path.basename(name), len(out), 'paths; largest arrival miss', round(worst, 6), 'AU')
 

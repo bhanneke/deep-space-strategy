@@ -17,7 +17,8 @@ PARK = {k: (v['mu'], v['r']) for k, v in PARKING.items()}
 def park_burn(vinf, node):                   # km/s, burn between the node's end state and a hyperbola
     return planet_side_dv(node, vinf)
 
-A = {'mercury': 0.387, 'venus': 0.723, 'earth': 1.0, 'mars': 1.524, 'ceres': 2.77, 'vesta': 2.36, 'psyche': 2.92, 'jupiter': 5.20, 'saturn': 9.54}
+A = {'mercury': 0.387, 'venus': 0.723, 'earth': 1.0, 'mars': 1.524, 'ceres': 2.77, 'vesta': 2.36, 'psyche': 2.92, 'jupiter': 5.20, 'saturn': 9.54,
+     '433': 1.458, '101955': 1.126, '162173': 1.191}
 def hohmann_days(a1, a2):
     at = (a1 + a2) / 2
     return math.pi * math.sqrt(at ** 3 / 2.9591220828e-4)

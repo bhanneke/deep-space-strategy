@@ -62,6 +62,9 @@ def run(year, islands, gens, pop, evolves):
             'mean_vinf_mars': round(float(np.mean([e['vinf'] for e in enc if e['body'] == 'mars'])), 2)}
 
 def main():
+    import os
+    if os.environ.get('SOLMAPS_POOL'):
+        pg.mp_island.init_pool(int(os.environ['SOLMAPS_POOL']))
     first, last = int(sys.argv[1]), int(sys.argv[2])
     budget = dict(islands=int(sys.argv[3]), gens=int(sys.argv[4]), pop=int(sys.argv[5]), evolves=int(sys.argv[6]))
     out = []
