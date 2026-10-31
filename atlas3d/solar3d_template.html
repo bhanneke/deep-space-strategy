@@ -105,6 +105,7 @@ a{color:var(--c-water)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script id="net-data" type="application/json">/*NET*/</script>
 <script id="fb-data" type="application/json">/*FLYBY*/</script>
+<script id="stn-journey" type="application/json">/*STNJ*/</script>
 <script>/*ENGINE*/</script>
 <script>
 const DATA = JSON.parse(document.getElementById('atlas-data').textContent);
@@ -583,7 +584,7 @@ function launch(r) {
   const line = arcLine(r.el, r.tof, 0xffffff, 0.95);
   const ship = new THREE.Mesh(new THREE.OctahedronGeometry(0.18), new THREE.MeshBasicMaterial({ color: 0xffffff }));
   flightGroup.add(line); flightGroup.add(ship);
-  state.flights.push({ from: r.from, to: r.to, name: BY[r.to].name, dv: r.dv, jdDep: r.jdDep, tof: r.tof, el: r.el, line, ship });
+  state.flights.push({ from: r.from, to: r.to, name: nodeName(r.to), dv: r.dv, jdDep: r.jdDep, tof: r.tof, el: r.el, line, ship });
   updateRoutes(); renderPanel();
 }
 function routesPanel() {
@@ -601,7 +602,7 @@ function routesPanel() {
       <div class="meta">leave ${isoOf(r.jdDep)} · ${r.tof} days${r.el ? '' : ' · no arc drawn'}</div>${flyTxt}
       <div class="list"><button type="button" data-hl="${r.key}" aria-pressed="${state.hl === r.key}">Highlight</button><button type="button" data-launch="${r.key}" ${r.el ? '' : 'disabled'}>Launch a ship</button><button type="button" data-go="${r.key}">Jump to departure</button></div></div>`;
   }).join('');
-  const fl = state.flights.map((f, i) => { const t = state.jd - f.jdDep; const st = t < 0 ? `departs in ${Math.ceil(-t)} days` : t <= f.tof ? `in flight, day ${Math.floor(t)} of ${f.tof}` : 'arrived'; return `<div class="meta">${esc(BY[f.from].name)} to ${esc(f.name)}: ${st}</div>`; }).join('');
+  const fl = state.flights.map((f, i) => { const t = state.jd - f.jdDep; const st = t < 0 ? `departs in ${Math.ceil(-t)} days` : t <= f.tof ? `in flight, day ${Math.floor(t)} of ${f.tof}` : 'arrived'; return `<div class="meta">${esc(nodeName(f.from))} to ${esc(f.name)}: ${st}</div>`; }).join('');
   return `<div><h2>Routes ${state.routeMode === 'to' ? 'to' : 'from'} ${esc(BY[from].name)}</h2><p class="caveat">Every launch window between ${isoOf(jdOfK(k))} and ${isoOf(jdOfK(k + state.H))}, each at its cheapest departure date; ${routeList.length} windows to ${new Set(routeList.map(r => r.site)).size} sites. Windows more than 3 km/s above a destination's best are left out. Dashed cyan paths are slingshot routes from the pykep flyby search, with a ring at each flyby planet; they exist so far for routes from Earth to Jupiter, Ceres, Vesta and Psyche. Δv includes the burn out of the parking orbit and into the destination's (rendezvous at small bodies); colours run from cheap (gold) to costly (red). Flyby alternatives come from the pykep search where it has run.</p></div>
     ${state.flights.length ? `<div><h3>Your ships</h3>${fl}<p class="caveat">Press play (1 hour or 6 hours per frame works well) to watch them fly.</p></div>` : ''}
     <div class="res">${rows}</div>
@@ -623,7 +624,7 @@ $('routeMode').addEventListener('change', e => { state.routeMode = e.target.valu
 /* ---------- controls ---------- */
 const DAY0 = Date.UTC(2026, 0, 1), DAY1 = Date.UTC(2100, 11, 31), TODAY = Date.UTC(2026, 9, 30);
 const jdOf = ms => ms / 864e5 + 2440587.5, msOf = jd => (jd - 2440587.5) * 864e5;
-function setJD(jd) { state.jd = jd; $('dateOut').textContent = new Date(msOf(jd)).toISOString().slice(0, 10) + (msOf(jd) > Date.UTC(2050, 11, 31) ? ' ~' : ''); $('dateSlider').value = Math.round((msOf(jd) - DAY0) / 864e5); place(jd); if (typeof updateRoutes === 'function' && NET) updateRoutes(); }
+function setJD(jd) { state.jd = jd; $('dateOut').textContent = new Date(msOf(jd)).toISOString().slice(0, 10) + (msOf(jd) > Date.UTC(2050, 11, 31) ? ' ~' : ''); $('dateSlider').value = Math.round((msOf(jd) - DAY0) / 864e5); place(jd); if (typeof updateRoutes === 'function' && NET) updateRoutes(); if (STN_READY) updateStationMarkers(); }
 $('dateSlider').max = Math.round((DAY1 - DAY0) / 864e5);
 $('dateSlider').addEventListener('input', e => setJD(jdOf(DAY0 + (+e.target.value) * 864e5)));
 $('chips').innerHTML = CATS.map(c => `<button type="button" class="chip" data-cat="${c.id}" aria-pressed="true">${glyph(c)}${c.label}</button>`).join('');
@@ -672,8 +673,16 @@ function frame(t) {
 /* ---------- journey planner: shortest paths on the time-expanded graph ---------- */
 // Vertices are (site, date index); a ship can wait at a site for free or travel along a direct transfer or a slingshot
 // route. The graph points forward in time, so one pass in date order finds the cheapest arrival at every vertex.
-const SITE_IDS = NET.nodes.map(n => n.id), SI = Object.fromEntries(SITE_IDS.map((s, i) => [s, i]));
+const STJ = JSON.parse(document.getElementById('stn-journey').textContent);
+const STN_IDS = STJ.nodes.map((n, i) => 'stn' + i);
+const SITE_IDS = NET.nodes.map(n => n.id).concat(STN_IDS), SI = Object.fromEntries(SITE_IDS.map((s, i) => [s, i]));
+const NSITE = NET.nodes.length;
 const REFUEL = new Set(['earth', 'mars', 'ceres', '101955', '162173']);   // sites that make or receive propellant
+const STN_SITE = { eml1: 'earth', venus: 'venus', mars: 'mars', ceres: 'ceres' };
+const stnBody = STJ.nodes.map(n => n.site ? BY[STN_SITE[n.site]] : { orbit: { kepler: { a: n.a, e: n.e, i: n.i, node: n.node, w: n.w, M0: n.M0, epoch: STJ.epoch_jd } } });
+const bodyOf = id => id.startsWith('stn') ? stnBody[+id.slice(3)] : BY[id];
+const nodeName = id => { if (!id.startsWith('stn')) return BY[id].name; const n = STJ.nodes[+id.slice(3)]; return n.name || `Station on a ${n.a.toFixed(1)} AU orbit`; };
+const activeStations = () => new Set(state.jStations ? STJ.sets[state.jStations - 1].map(i => 'stn' + i) : []);
 let ARCS = null;
 function journeyArcs() {
   if (ARCS) return ARCS;
@@ -682,6 +691,18 @@ function journeyArcs() {
     if (r.dep[k] == null) continue;
     ARCS[k].push({ u: SI[r.from], v: SI[r.to], k, k2: k + Math.ceil(r.tof[k] / NET.meta.step_days), cost: r.dep[k] + r.arr[k], tof: r.tof[k], kind: 'direct' });
   }
+  const kOfStn = d => Math.round((STJ.epoch_jd + d * STJ.step_days - NET.meta.jd0) / NET.meta.step_days);
+  const addStn = (u, v, cost, tof, d) => { const k = kOfStn(d); if (k < 0 || k >= NET.meta.n || cost >= 99) return;
+    ARCS[k].push({ u: SI[u], v: SI[v], k, k2: k + Math.ceil(tof / NET.meta.step_days), cost, tof, kind: 'station' }); };
+  STJ.nodes.forEach((_, i) => {
+    for (let d = 0; d < STJ.nn.cost[i][0 === i ? 1 : 0].length; d++) {
+      STJ.nodes.forEach((__, j) => { if (i !== j) addStn('stn' + i, 'stn' + j, STJ.nn.cost[i][j][d], STJ.nn.tof[i][j][d], d); });
+      STJ.sites.forEach((site, j) => {
+        addStn('stn' + i, site, STJ.ns.cost[i][j][d], STJ.ns.tof[i][j][d], d);
+        addStn(site, 'stn' + i, STJ.sn.cost[j][i][d], STJ.sn.tof[j][i][d], d);
+      });
+    }
+  });
   for (const f of FBR) {
     if (!f.feasible || f.seq.length < 3 || SI[f.origin] == null || SI[f.target] == null) continue;
     const k = Math.round((f.launch_mjd2000 + 2451544.5 - NET.meta.jd0) / NET.meta.step_days);
@@ -692,6 +713,7 @@ function journeyArcs() {
 }
 // mode 'tank': no refuelling, total delta-v within budget B. mode 'refuel': every leg within B, stops only where propellant exists.
 function planJourney(from, to, k0, mode, B, years) {
+  const live = activeStations(), off = i => i >= NSITE && !live.has(SITE_IDS[i]);
   const arcs = journeyArcs(), ns = SITE_IDS.length, kEnd = Math.min(NET.meta.n - 1, k0 + Math.round(years * 365.25 / NET.meta.step_days));
   const span = kEnd - k0 + 1, best = new Float64Array(span * ns).fill(Infinity), back = new Array(span * ns).fill(null);
   const at = (k, s) => (k - k0) * ns + s, src = SI[from], dst = SI[to];
@@ -704,11 +726,11 @@ function planJourney(from, to, k0, mode, B, years) {
     }
     if (earliest == null && best[at(k, dst)] <= (mode === 'tank' ? B : Infinity) && best[at(k, dst)] < Infinity) earliest = k;
     for (const e of arcs[k]) {
-      if (e.k2 > kEnd) continue;
+      if (e.k2 > kEnd || off(e.u) || off(e.v)) continue;
       const c0 = best[at(k, e.u)]; if (c0 === Infinity) continue;
       if (mode === 'refuel') {
         if (e.cost > B) continue;
-        if (e.v !== dst && !REFUEL.has(SITE_IDS[e.v])) continue;
+        if (e.v !== dst && !REFUEL.has(SITE_IDS[e.v]) && !live.has(SITE_IDS[e.v])) continue;
       }
       const c = c0 + e.cost; if (mode === 'tank' && c > B) continue;
       const t = at(e.k2, e.v);
@@ -725,11 +747,16 @@ function planJourney(from, to, k0, mode, B, years) {
     cheapest: cheapK == null ? null : { k: cheapK, dv: best[at(cheapK, dst)], legs: trace(cheapK) },
   };
 }
-Object.assign(state, { journey: false, jFrom: 'earth', jTo: 'ceres', jMode: 'refuel', jB: 8, jYears: 15, jResult: null, jShow: 'earliest' });
+Object.assign(state, { journey: false, jFrom: 'earth', jTo: 'ceres', jMode: 'refuel', jB: 8, jYears: 15, jStations: 0, jResult: null, jShow: 'earliest' });
 const journeyGroup = new THREE.Group(); scene.add(journeyGroup);
 function legRoute(e) {                                    // a leg in the shape the route functions expect
   const jdDep = jdOfK(e.k), from = SITE_IDS[e.u], to = SITE_IDS[e.v];
   if (e.kind === 'slingshot') return { from, to, dv: e.cost, jdDep, tof: e.tof, fly: e.fly, flyPath: flybyPath(e.fly) };
+  if (e.kind === 'station') {
+    const s1 = ENG.stateAt(bodyOf(from), jdDep), s2 = ENG.stateAt(bodyOf(to), jdDep + e.tof);
+    const L = s1 && s2 && ENG.lambert(s1.r, s2.r, e.tof, K2), el = L ? rv2el(s1.r, L.v1) : null;
+    return { from, to, dv: e.cost, jdDep, tof: e.tof, el: el && el.e < 1 && el.a > 0 ? el : null, station: true };
+  }
   return { from, to, dv: e.cost, jdDep, tof: e.tof, el: solveArc(from, to, jdDep, e.tof) };
 }
 function drawJourney() {
@@ -744,7 +771,7 @@ function drawJourney() {
 function journeyPanel() {
   const opt = sel => NET.nodes.map(n => `<option value="${n.id}" ${n.id === sel ? 'selected' : ''}>${esc(n.name)}</option>`).join('');
   const r = state.jResult, j = r && r[state.jShow];
-  const legs = j ? j.legs.map(e => `<div class="meta">${isoOf(jdOfK(e.k))} · ${esc(BY[SITE_IDS[e.u]].name)} to ${esc(BY[SITE_IDS[e.v]].name)} · ${e.cost.toFixed(2)} km/s · ${e.tof} days${e.kind === 'slingshot' ? ' · slingshot via ' + e.fly.seq.slice(1, -1).map(x => BY[x].name).join(', ') : ''}</div>`).join('') : '';
+  const legs = j ? j.legs.map(e => `<div class="meta">${isoOf(jdOfK(e.k))} · ${esc(nodeName(SITE_IDS[e.u]))} to ${esc(nodeName(SITE_IDS[e.v]))} · ${e.cost.toFixed(2)} km/s · ${e.tof} days${e.kind === 'slingshot' ? ' · slingshot via ' + e.fly.seq.slice(1, -1).map(x => BY[x].name).join(', ') : ''}</div>`).join('') : '';
   const summary = j ? `<p><strong>Arrives ${isoOf(jdOfK(j.k))}</strong> after ${Math.round((jdOfK(j.k) - jdOfK(Math.max(0, kOf(state.jd)))) / 365.25 * 10) / 10} years · ${j.legs.length} leg${j.legs.length > 1 ? 's' : ''} · ${j.dv.toFixed(2)} km/s in total</p>${legs}
       <div class="list"><button type="button" id="jLaunch">Launch a ship</button><button type="button" id="jGo">Jump to departure</button></div>`
     : (r ? `<p class="caveat">No journey within the budget and time limit. Raise the budget or allow refuelling stops.</p>` : '');
@@ -754,17 +781,18 @@ function journeyPanel() {
       <label>To <select id="jTo">${opt(state.jTo)}</select></label>
       <label>Fuel <select id="jMode"><option value="refuel" ${state.jMode === 'refuel' ? 'selected' : ''}>refuel at stops</option><option value="tank" ${state.jMode === 'tank' ? 'selected' : ''}>one tank, no refuelling</option></select></label>
       <label>${state.jMode === 'refuel' ? 'Most per leg' : 'Most in total'} <select id="jB">${[4, 5, 6, 7, 8, 10, 12, 15, 20, 25].map(v => `<option value="${v}" ${v === state.jB ? 'selected' : ''}>${v} km/s</option>`).join('')}</select></label>
+      <label>Stations <select id="jStations"><option value="0" ${state.jStations === 0 ? 'selected' : ''}>none</option>${STJ.sets.map((_, i) => `<option value="${i + 1}" ${state.jStations === i + 1 ? 'selected' : ''}>best ${i + 1}</option>`).join('')}</select></label>
       <label>Within <select id="jYears">${[5, 10, 15, 25].map(v => `<option value="${v}" ${v === state.jYears ? 'selected' : ''}>${v} years</option>`).join('')}</select></label>
       <button type="button" id="jPlan">Find journeys</button>
     </div>
     ${r ? `<div class="list"><button type="button" id="jE" aria-pressed="${state.jShow === 'earliest'}">Earliest arrival</button><button type="button" id="jC" aria-pressed="${state.jShow === 'cheapest'}">Least fuel</button></div>` : ''}
     <div>${summary}</div>
-    <p class="caveat">Refuelling stops: Earth, Mars, Ceres, Bennu and Ryugu, the sites with water or supply from Earth. Stations join once the station network is in the graph.</p>`;
+    <p class="caveat">Refuelling stops: Earth, Mars, Ceres, Bennu and Ryugu, the sites with water or supply from Earth, plus the stations you add. The stations are the best refuelling network from the station-siting page (best 5: Earth–Moon L1, low Mars orbit, two orbits in the inner asteroid belt, low Venus orbit); their transfers cover departures from 2027 to 2046 every 30 days.</p>`;
 }
 function bindJourney() {
   const P = $('panel'), q = id => P.querySelector('#' + id);
   if (!q('jPlan')) return;
-  for (const id of ['jFrom', 'jTo', 'jMode', 'jB', 'jYears']) q(id).addEventListener('change', e => { state[id] = ['jB', 'jYears'].includes(id) ? +e.target.value : e.target.value; if (id === 'jMode') renderPanel(); });
+  for (const id of ['jFrom', 'jTo', 'jMode', 'jB', 'jYears', 'jStations']) q(id).addEventListener('change', e => { state[id] = ['jB', 'jYears', 'jStations'].includes(id) ? +e.target.value : e.target.value; if (id === 'jMode' || id === 'jStations') { updateStationMarkers(); renderPanel(); } });
   q('jPlan').addEventListener('click', () => {
     state.jResult = state.jFrom === state.jTo ? null : planJourney(state.jFrom, state.jTo, Math.max(0, kOf(state.jd)), state.jMode, state.jB, state.jYears);
     drawJourney(); renderPanel();
@@ -774,6 +802,16 @@ function bindJourney() {
   if (j && q('jLaunch')) {
     q('jLaunch').addEventListener('click', () => { for (const e of j.legs) { const r = legRoute(e); if (r.flyPath) launchSling(r); else launch(r); } });
     q('jGo').addEventListener('click', () => setJD(jdOfK(j.legs[0].k)));
+  }
+}
+const stnGroup = new THREE.Group(); scene.add(stnGroup); var STN_READY = true;   // set once the station data exists; setJD checks it
+function updateStationMarkers() {
+  clearGroup(stnGroup);
+  for (const id of activeStations()) {
+    const n = STJ.nodes[+id.slice(3)]; if (n.site) continue;      // stations at a planet or at L1 sit with that body
+    const st = ENG.stateAt(bodyOf(id), state.jd); if (!st) continue;
+    const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.22), new THREE.MeshBasicMaterial({ color: 0xf0b347 }));
+    m.position.copy(S(st.r)); m.userData.stn = id; stnGroup.add(m);
   }
 }
 $('btnJourney').addEventListener('click', () => { state.journey = !state.journey; $('btnJourney').setAttribute('aria-pressed', state.journey); if (state.journey) state.sel = null; renderPanel(); });
