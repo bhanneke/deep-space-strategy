@@ -32,7 +32,7 @@
 
   <h2>Flyby routes</h2>
   <p>Flyby routes use planets as slingshots. solmaps searches sequences with up to two flybys of Venus, Earth, Mars or Jupiter, from low Earth orbit and from low Mars orbit, to Jupiter, Saturn, Mercury, Ceres, Vesta and Psyche. Each leg may include one deep-space manoeuvre (pykep's MGA-1DSM model). A global optimiser (pygmo's self-adaptive differential evolution, eight islands, two independent starts per problem) finds the cheapest route in each two-year launch window. The search caps the flight time of each leg at 1.9 times the Hohmann time.</p>
-  <p>From low Earth orbit, the best slingshot route costs less than the direct route in every two-year window from 2027 to 2098 for Mercury, Saturn, Vesta, Ceres and Psyche, and in 34 of 36 windows for Jupiter. The median saving ranges from 1.0 km/s (Psyche) to 4.0 km/s (Mercury, with two Venus flybys); the <a href="technical.html#flyby">technical documentation</a> lists every target. The search from low Mars orbit is still running.</p>
+  <p>From low Earth orbit, the best slingshot route costs less than the direct route in every two-year window from 2027 to 2098 for Mercury, Saturn, Vesta, Ceres and Psyche, and in 34 of 36 windows for Jupiter. The median saving ranges from 1.0 km/s (Psyche) to 4.0 km/s (Mercury, with two Venus flybys); the <a href="technical.html#flyby">technical documentation</a> lists every target. From low Mars orbit, slingshots save less: the median saving ranges from 0.5 km/s (Psyche) to 1.9 km/s (Saturn), and for Ceres and Psyche the direct route costs less in about half of the windows.</p>
 
   <h2>Checks against reality</h2>
   <div class="tablewrap"><table>

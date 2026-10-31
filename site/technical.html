@@ -102,9 +102,20 @@
       <tr><td>Psyche</td><td>36 of 36</td><td>1.0 km/s</td><td>2.1 km/s</td><td>Earth or Mars</td></tr>
     </tbody>
   </table></div>
-  <p><strong>Drawn paths.</strong> For routes saved without encounter dates, the 3D atlas estimates the flyby dates: it splits the flight between launch and arrival at every candidate date, solves the Lambert legs, and keeps the split with the lowest score</p>
+  <p>From low Mars orbit the gains are smaller. The most frequent slingshot is a return to Mars itself: the ship leaves on an orbit that meets Mars again two Mars years later, and the flyby sends it on.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Target, from low Mars orbit</th><th>Windows where the slingshot costs less</th><th>Median saving</th><th>Largest saving</th><th>Most frequent flybys</th></tr></thead>
+    <tbody>
+      <tr><td>Saturn</td><td>34 of 36</td><td>1.9 km/s</td><td>3.5 km/s</td><td>Mars then Jupiter, or Jupiter</td></tr>
+      <tr><td>Jupiter</td><td>34 of 36</td><td>0.9 km/s</td><td>1.4 km/s</td><td>Mars</td></tr>
+      <tr><td>Vesta</td><td>26 of 36</td><td>0.6 km/s</td><td>2.7 km/s</td><td>Mars</td></tr>
+      <tr><td>Psyche</td><td>20 of 36</td><td>0.5 km/s</td><td>1.8 km/s</td><td>Mars</td></tr>
+      <tr><td>Ceres</td><td>18 of 36</td><td>0.7 km/s</td><td>2.9 km/s</td><td>Mars</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Drawn paths.</strong> The 3D atlas draws routes from low Mars orbit along the optimiser's own trajectory: pykep rebuilds each route from its stored decision vector, deep-space manoeuvres included, and the page samples it at 80 points plus the exact flyby moments. Every rebuilt route ends within 1,200 km of its target planet on the arrival date. Routes from Earth come from the first run, which stored only launch date, arrival date and sequence. For those, the page estimates the flyby dates: it splits the flight between launch and arrival at every candidate date, solves the Lambert legs, and keeps the split with the lowest score</p>
   $$v_{\infty,\mathrm{dep}} + v_{\infty,\mathrm{arr}} + 3\sum_{\text{flybys}} \Big|\, \lVert \mathbf v_{\infty,\mathrm{in}} \rVert - \lVert \mathbf v_{\infty,\mathrm{out}} \rVert \,\Big| ,$$
-  <p>whose last term penalises flybys that would need a burn. The page labels these paths as estimated; new runs store the optimiser's encounter dates.</p>
+  <p>whose last term penalises flybys that would need a burn. The page labels these paths as estimated.</p>
 
   <h2 id="hubs">7. Hubs, depots and the rocket equation</h2>
   <p>A ship with exhaust speed \(v_e\) needs a start mass of \(e^{\Delta v / v_e}\) per kilogram delivered (Tsiolkovsky). Flown directly from low Earth orbit to destination \(d\), all of it comes from Earth. Via a hub \(h\) that makes propellant from local water, only the leg to the hub uses Earth propellant, and the rocket equation restarts there. The share of Earth-launched mass the hub saves is</p>
