@@ -19,7 +19,7 @@ def _plain(o):
         return {k: _plain(v) for k, v in o.items()}
     if isinstance(o, (list, tuple)):
         return [_plain(v) for v in o]
-    if isinstance(o, (np.floating, np.integer)):
+    if isinstance(o, (np.floating, np.integer, np.bool_)):
         return o.item()
     if isinstance(o, np.ndarray):
         return o.tolist()
@@ -30,10 +30,15 @@ def cached(kind, params, compute):
     key = hashlib.sha256(json.dumps({'kind': kind, **params}, sort_keys=True, default=str).encode()).hexdigest()[:24]
     path = CACHE / f'{kind}-{key}.json'
     if path.exists():
-        res = json.load(open(path)); res['cached'] = True
-        return res
+        try:
+            res = json.load(open(path)); res['cached'] = True
+            return res
+        except ValueError:                        # an unreadable entry counts as missing and gets recomputed
+            path.unlink()
     res = _plain(compute()); res['params'] = params
-    json.dump(res, open(path, 'w'))
+    tmp = path.with_suffix('.tmp')                # write, then rename: a crash never leaves a half-written entry
+    json.dump(res, open(tmp, 'w'))
+    tmp.replace(path)
     res['cached'] = False
     return res
 

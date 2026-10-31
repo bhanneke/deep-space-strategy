@@ -75,11 +75,11 @@ def burn(ship, fuel_kg, dv_kms, payload_kg=None, parking_period_s=None):
     return BurnResult(dv_kms, fuel_kg, used, fuel_kg - used if ok else 0.0, m0, m1 if ok else m0 - fuel_kg, duration, ok, warn)
 
 # Illustrative presets (rounded generic values, not specific vehicles). Edit them or define your own ship.
-PRESETS = {    # full-tank capacity with payload: methalox 7.2, hydrolox 7.9, nuclear thermal 7.5 km/s
+PRESETS = {    # full-tank capacity with payload: methalox 7.2, hydrolox 7.9, nuclear thermal 7.5, electric 16.7 km/s
     'methalox tug':        Ship('methalox tug', dry_kg=12000, payload_kg=20000, fuel_capacity_kg=200000, thrust_n=2.0e6, isp_s=370),
     'hydrolox tug':        Ship('hydrolox tug', dry_kg=10000, payload_kg=10000, fuel_capacity_kg=100000, thrust_n=4.0e5, isp_s=450),
     'nuclear thermal':     Ship('nuclear thermal', dry_kg=25000, payload_kg=20000, fuel_capacity_kg=60000, thrust_n=3.0e5, isp_s=900,
                                 propulsion='nuclear thermal'),
-    'solar-electric cargo': Ship('solar-electric cargo', dry_kg=8000, payload_kg=20000, fuel_capacity_kg=12000, thrust_n=10.0, isp_s=2500,
+    'solar-electric cargo': Ship('solar-electric cargo', dry_kg=8000, payload_kg=20000, fuel_capacity_kg=30000, thrust_n=10.0, isp_s=2500,
                                  propulsion='electric'),
 }

@@ -7,7 +7,7 @@ pk = pytest.importorskip('pykep')
 from engine.ship import PRESETS, Ship
 from engine import lowthrust as LT
 
-SHIP = PRESETS['solar-electric cargo']
+SHIP = Ship('sep test', dry_kg=8000, payload_kg=20000, fuel_capacity_kg=12000, thrust_n=10.0, isp_s=2500, propulsion='electric')
 WINDOW, TOF = (10600, 10900), (300, 1200)          # MJD2000: departures Jan-Nov 2029
 
 @pytest.fixture(scope='module')

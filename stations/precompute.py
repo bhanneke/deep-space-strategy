@@ -46,8 +46,9 @@ def tofs(a1, a2):
     return [lo * (hi / lo) ** (k / (NTOF - 1)) for k in range(NTOF)]
 
 def best(A, B, t0, grid, cost):
+    """cheapest transfer over the flight-time grid: (cost, flight time in days)"""
     ra, va = A.eph(t0)
-    b = np.inf
+    b, bt = np.inf, np.nan
     for T in grid:
         rb, vb = B.eph(t0 + T)
         try:
@@ -56,26 +57,28 @@ def best(A, B, t0, grid, cost):
             continue
         vd = np.linalg.norm(np.array(l.v0[0]) - va) / 1000
         vr = np.linalg.norm(np.array(l.v1[0]) - vb) / 1000
-        b = min(b, cost(vd, vr))
-    return b
+        c = cost(vd, vr)
+        if c < b:
+            b, bt = c, T
+    return b, bt
 
 def one(args):
     k, c = args
     atlas = bodies.load_atlas()
     C = station_body(c)
     out = np.full((len(NODES), len(DATES)), np.nan, np.float32)
-    inn = np.full_like(out, np.nan)
-    in_eml1 = np.full(len(DATES), np.nan, np.float32)
+    inn, out_t, inn_t = np.full_like(out, np.nan), np.full_like(out, np.nan), np.full_like(out, np.nan)
+    in_eml1, in_eml1_t = np.full(len(DATES), np.nan, np.float32), np.full(len(DATES), np.nan, np.float32)
     t0s = EPOCH_JD - 2451544.5 + DATES
     for s, name in enumerate(NODES):
         S = bodies.body(name, atlas)
         grid = tofs(c['a'], site_a(name, atlas))
         for j, t0 in enumerate(t0s):
-            out[s, j] = best(C, S, t0, grid, lambda vd, vr: vd + well(vr, name))
-            inn[s, j] = best(S, C, t0, grid, lambda vd, vr: well(vd, name) + vr)
+            out[s, j], out_t[s, j] = best(C, S, t0, grid, lambda vd, vr: vd + well(vr, name))
+            inn[s, j], inn_t[s, j] = best(S, C, t0, grid, lambda vd, vr: well(vd, name) + vr)
             if name == 'earth':
-                in_eml1[j] = best(S, C, t0, grid, lambda vd, vr: from_eml1(vd) + vr)
-    return k, out, inn, in_eml1
+                in_eml1[j], in_eml1_t[j] = best(S, C, t0, grid, lambda vd, vr: from_eml1(vd) + vr)
+    return k, out, inn, in_eml1, out_t, inn_t, in_eml1_t
 
 def main():
     cands = candidates()
@@ -84,12 +87,14 @@ def main():
     cands = cands[:n]
     t = time.time()
     OUT = np.zeros((n, len(NODES), len(DATES)), np.float32); IN = np.zeros_like(OUT); EML = np.zeros((n, len(DATES)), np.float32)
+    OUTt, INt, EMLt = np.zeros_like(OUT), np.zeros_like(OUT), np.zeros_like(EML)
     with Pool(procs) as p:
-        for done, (k, o, i, e) in enumerate(p.imap_unordered(one, list(enumerate(cands)), chunksize=4), 1):
-            OUT[k], IN[k], EML[k] = o, i, e
+        for done, (k, o, i, e, ot, it, et) in enumerate(p.imap_unordered(one, list(enumerate(cands)), chunksize=4), 1):
+            OUT[k], IN[k], EML[k], OUTt[k], INt[k], EMLt[k] = o, i, e, ot, it, et
             if done % 200 == 0:
                 print(done, '/', n, round(time.time() - t), 's', flush=True)
-    np.savez_compressed('/work/stations/costs.npz', out=OUT, inn=IN, in_eml1=EML, dates=DATES, epoch_jd=EPOCH_JD)
+    np.savez_compressed('/work/stations/costs.npz', out=OUT, inn=IN, in_eml1=EML, out_tof=OUTt, inn_tof=INt, in_eml1_tof=EMLt,
+                        dates=DATES, epoch_jd=EPOCH_JD)
     json.dump({'meta': {'epoch_jd': EPOCH_JD, 'step_days': STEP, 'years': YEARS, 'sites': NODES, 'tof_steps': NTOF,
                         'eml1_departure': 'cheaper of a burn at Earth-Moon L1 and a perigee drop to 300 km with a perigee burn',
                         'method': 'Cheapest single-revolution Lambert transfer (pykep, DE440 sites) per 30-day departure date; '

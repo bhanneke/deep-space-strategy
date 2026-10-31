@@ -39,7 +39,8 @@ def test_single_leg_matches_the_best_alternative(ctx):
     ship = Ship('big', 10000, 0, 500000, 1e6, 450)
     res = plan(ctx, ship, 'earth', 'mars', max_legs=1, dep_until=JD_2027 + 60)
     alts, _ = ctx
-    k0, k1 = alts.k_of(JD_2027), alts.k_of(JD_2027 + 60)
+    import math
+    k0 = math.ceil((JD_2027 - alts.jd0) / alts.step); k1 = math.floor((JD_2027 + 60 - alts.jd0) / alts.step)
     best = min(sum(alts.priced(o, 'earth', 'mars')) for k in range(k0, k1 + 1) for o in alts.options('earth', 'mars', k))
     assert min(j['dv_total'] for j in res) == pytest.approx(best, abs=1e-3)
     check(res, ship)
@@ -81,6 +82,11 @@ def test_query_speed(ctx):
     t = time.time()
     plan(ctx, PRESETS['methalox tug'], 'earth', 'psyche', max_legs=3)
     assert time.time() - t < 60
+
+def test_departures_stay_inside_the_window(ctx):
+    for start in (JD_2027, JD_2027 + 3, JD_2027 + 7):
+        res = plan(ctx, PRESETS['methalox tug'], 'earth', 'mars', dep_from=start, dep_until=start + 400)
+        assert res and all(start - 1e-6 <= j['depart_jd'] <= start + 400 + 1e-6 for j in res)
 
 def test_max_payload_uses_the_tightest_segment(ctx):
     from engine.journey import max_payload

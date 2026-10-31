@@ -71,7 +71,9 @@ def plan(alts, ship, origin, destination, depart_from_jd, depart_until_jd, arriv
         raise ValueError('low-thrust ships fly continuous-thrust legs; use engine.lowthrust for them')
     net = net or Network(alts)
     step = alts.step
-    k0 = max(0, alts.k_of(depart_from_jd)); k_dep_end = min(alts.n_dates - 1, alts.k_of(depart_until_jd))
+    # the departure window covers the network dates inside it: the first on or after its start, the last on or before its end
+    k0 = max(0, math.ceil((depart_from_jd - alts.jd0) / step - 1e-9))
+    k_dep_end = min(alts.n_dates - 1, math.floor((depart_until_jd - alts.jd0) / step + 1e-9))
     # the search runs on network dates; the deadline itself is checked against each leg's actual arrival time
     arrive_by_jd = arrive_by_jd or alts.jd(k0) + 15 * 365.25
     k_end = min(alts.n_dates - 1, alts.k_of(arrive_by_jd) + 1)
@@ -139,7 +141,7 @@ def plan(alts, ship, origin, destination, depart_from_jd, depart_until_jd, arriv
         if any(r.k <= L.k and r.loaded <= L.loaded + 1e-6 and r.fuel >= L.fuel - 1e-6 for r in res):
             continue
         res.append(L)
-    return [describe(alts, ship, L) for L in res[:max_results]]
+    return sorted((describe(alts, ship, L) for L in res[:max_results]), key=lambda j: j['arrive_jd'])
 
 def describe(alts, ship, L):
     """itinerary with dates, burns and the mass history. Each burn is recomputed with Ship.burn as a check of the
