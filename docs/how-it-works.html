@@ -14,7 +14,7 @@
 
   <h2>Data</h2>
   <p>The resource atlas holds 37 entries: the planets, the major moons, Ceres, Vesta, Psyche, Pluto, three named near-Earth asteroids (Eros, Bennu, Ryugu), five asteroid populations and the Sun–Earth and Earth–Moon Lagrange points. It lists 98 resource entries, for water and other volatiles, metals, nitrogen, carbon and phosphorus, hydrogen and helium-3, silicates and sunlight.</p>
-  <p>Each resource entry carries two labels. The evidence level says how well science knows it: <em>confirmed</em> (measured in place or in a returned sample), <em>strong</em> (several independent remote-sensing lines), <em>inferred</em> (spectral class or density analogy) or <em>speculative</em>. The verification tag says how solmaps checked it: <em>page-checked</em> (read on the source page), <em>snippet-only</em> (seen only in search results), <em>derived</em> (computed from checked inputs) or <em>unverified</em>. Of the 98 entries, 63 are page-checked. Sources include NASA's NSSDC fact sheets, JPL's Solar System Dynamics pages, mission pages and peer-reviewed papers; every entry links to its source.</p>
+  <p>Each resource entry has two labels. The evidence level says how well science knows it: <em>confirmed</em> (measured in place or in a returned sample), <em>strong</em> (several independent remote-sensing lines), <em>inferred</em> (spectral class or density analogy) or <em>speculative</em>. The verification tag says how solmaps checked it: <em>page-checked</em> (read on the source page), <em>snippet-only</em> (seen only in search results), <em>derived</em> (computed from checked inputs) or <em>unverified</em>. Of the 98 entries, 63 are page-checked. Sources include NASA's NSSDC fact sheets, JPL's Solar System Dynamics pages, mission pages and peer-reviewed papers; every entry links to its source.</p>
 
   <h2>Where things are</h2>
   <div class="tablewrap"><table>
@@ -22,18 +22,18 @@
     <tbody>
       <tr><td>Route costs (growth map, 3D routes)</td><td>JPL DE440 ephemeris via ESA pykep (planet-system barycentres)</td><td>About 1849 to 2150; agrees with the JPL Table 1 positions to 0.00003 AU for Mars in 2040</td></tr>
       <tr><td>Planet positions on the maps</td><td>JPL "Approximate Positions of the Planets", Table 1</td><td>Valid 1800 to 2050; later dates on the maps are approximate and marked</td></tr>
-      <tr><td>Ceres, Vesta, Psyche, Pluto, Eros, Bennu, Ryugu</td><td>JPL Small-Body Database elements, two-body motion</td><td>Planetary perturbations are ignored, so accuracy falls over decades</td></tr>
+      <tr><td>Ceres, Vesta, Psyche, Pluto, Eros, Bennu, Ryugu</td><td>JPL Small-Body Database elements, two-body motion</td><td>The model ignores the pull of the planets, so accuracy falls over decades</td></tr>
       <tr><td>Moons</td><td>JPL mean elements at J2000, period from the parent's mass</td><td>Rough; the 3D atlas spreads moon distances out for visibility</td></tr>
     </tbody>
   </table></div>
 
   <h2>Direct transfers</h2>
   <p>A direct route is one transfer arc from one site to another. For every departure date, every ten days from November 2026 to the end of 2100, solmaps solves Lambert's problem (the arc that connects two positions in a given flight time) for 30 flight times between 0.3 and 1.8 times the Hohmann time, and keeps the cheapest. That gives 132 routes between 12 sites over 2,709 departure dates.</p>
-  <p>The cost includes the burn that leaves a parking orbit and the burn that captures into the destination's parking orbit, using the Oberth relation <code>Δv = √(v∞² + 2μ/r) − √(μ/r)</code>. Parking orbits: 300 km above Earth, Mars and Venus, 200 km above Mercury, 50 km above Ceres, and circular orbits at the distance of Callisto (Jupiter) and Titan (Saturn). Small asteroids are reached by matching their velocity. All burns are impulsive; low-thrust electric propulsion is not modelled.</p>
+  <p>The cost includes the burn that leaves a parking orbit and the burn that captures into the destination's parking orbit, using the Oberth relation <code>Δv = √(v∞² + 2μ/r) − √(μ/r)</code>. Parking orbits: 300 km above Earth, Mars and Venus, 200 km above Mercury, 50 km above Ceres, and circular orbits at the distance of Callisto (Jupiter) and Titan (Saturn). At small asteroids a ship only matches their velocity. All burns are impulsive; low-thrust electric propulsion is not modelled.</p>
 
   <h2>Flyby routes</h2>
-  <p>Flyby routes use planets as slingshots. solmaps searches sequences with up to two flybys of Venus, Earth, Mars or Jupiter, from low Earth orbit and from low Mars orbit, to Jupiter, Saturn, Mercury, Ceres, Vesta and Psyche. Each leg may include one deep-space manoeuvre (pykep's MGA-1DSM model). A global optimiser (pygmo's self-adaptive differential evolution, eight islands, two independent starts per problem) finds the cheapest route in each two-year launch window. Leg flight times are capped at 1.9 times the Hohmann time.</p>
-  <p>Typical savings against the direct route: 2.6 to 5.6 km/s to Mercury via Venus, 2.5 to 4.4 km/s to Saturn via Jupiter, up to 2.8 km/s to Vesta via Mars, 0.5 to 1.7 km/s to Jupiter via an Earth flyby. The flyby search through 2098 was still running when this page was written; the pages show the windows that are finished.</p>
+  <p>Flyby routes use planets as slingshots. solmaps searches sequences with up to two flybys of Venus, Earth, Mars or Jupiter, from low Earth orbit and from low Mars orbit, to Jupiter, Saturn, Mercury, Ceres, Vesta and Psyche. Each leg may include one deep-space manoeuvre (pykep's MGA-1DSM model). A global optimiser (pygmo's self-adaptive differential evolution, eight islands, two independent starts per problem) finds the cheapest route in each two-year launch window. The search caps the flight time of each leg at 1.9 times the Hohmann time.</p>
+  <p>From low Earth orbit, the best slingshot route costs less than the direct route in every two-year window from 2027 to 2098 for Mercury, Saturn, Vesta, Ceres and Psyche, and in 34 of 36 windows for Jupiter. The median saving ranges from 1.0 km/s (Psyche) to 4.0 km/s (Mercury, with two Venus flybys); the <a href="technical.html#flyby">technical documentation</a> lists every target. The search from low Mars orbit is still running.</p>
 
   <h2>Checks against reality</h2>
   <div class="tablewrap"><table>
@@ -53,12 +53,12 @@
   <h3>Propellant leverage</h3>
   <p>A hub with local water can refuel ships, so the propellant for the onward leg never leaves Earth. For each destination, solmaps compares the Earth-launched mass for a direct flight, <code>exp(Δv_direct / vₑ)</code>, with the mass needed to reach the hub, <code>exp(Δv_hub / vₑ)</code>. A destination counts only when the hub is cheaper to reach than the destination and lies closer to it than low Earth orbit does. The measure ignores dry mass, tankage, time at the hub and the cost of the plant. In the current results an Earth–Moon L1 depot fed by lunar ice saves 57 to 90 percent of Earth-launched mass over 2026–2100 (62 to 90 percent with direct routes only).</p>
   <h3>Depot orbits</h3>
-  <p>solmaps scored 771 candidate solar orbits by two costs: the average cheapest transfer to eight destinations over 20 years, and the cost of supplying the depot from low Earth orbit. No orbit wins on both; the growth map lists the orbits that no other orbit beats on both costs.</p>
+  <p>solmaps scored 771 candidate solar orbits by two costs: the average cheapest transfer to eight destinations over 20 years, and the cost of supplying the depot from low Earth orbit. No orbit is best on both costs; the growth map lists the best orbit at each supply cost.</p>
   <h3>Cyclers</h3>
   <p>A cycler metric for Earth–Mars cyclers (maintenance burns at the flybys and the speeds a taxi must match) is in development.</p>
 
   <h2>The 3D atlas</h2>
-  <p>Distances from the Sun are compressed logarithmically and sizes are enlarged, so Mercury and the Kuiper belt fit in one view. Directions and inclinations are true. Asteroid populations are drawn as clouds of illustrative particles inside their published ranges. Route arcs are solved again between the displayed positions, so they meet the bodies on screen; their costs come from the DE440 network.</p>
+  <p>The 3D atlas compresses distances from the Sun logarithmically and enlarges sizes, so Mercury and the Kuiper belt fit in one view. Directions and inclinations are true. It draws asteroid populations as clouds of illustrative particles inside their published ranges. It solves route arcs again between the displayed positions, so they meet the bodies on screen; their costs come from the DE440 network.</p>
 
   <h2 id="build">Build it yourself</h2>
   <p>The computations run in a container with ESA pykep and pygmo from conda-forge, so nothing needs installing on the host apart from Docker, Python 3 and Node.</p>
