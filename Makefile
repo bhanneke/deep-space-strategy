@@ -6,11 +6,12 @@
 #   make serve   the comparison page at http://localhost:8077/
 #   make site    the public pages into docs/ (needs make data; station siting needs make stations)
 #   make pairs   station-to-station edges from the committed station ranking (about 20 seconds; the 3D atlas needs them)
+#   make depots  depot-orbit search for the growth map (Node, a few minutes)
 #   make stations  recompute the station candidates and ranking from scratch (about 10 minutes), then the edges
 IMAGE ?= solmaps-env:2
 RUN = docker run --rm -v "$(CURDIR)":/work -w /work $(IMAGE)
 
-.PHONY: all image data network alternatives test serve site stations pairs
+.PHONY: all image data network alternatives test serve site stations pairs depots
 all: image data test
 
 image:
@@ -38,5 +39,8 @@ stations:
 pairs:
 	$(RUN) python stations/pairs.py 8
 
-site: data pairs
+depots:
+	cd network && node stations.js > stations.log
+
+site: data pairs depots
 	python3 site/build_site.py
