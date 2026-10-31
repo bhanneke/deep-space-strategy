@@ -28,12 +28,55 @@ hyperbola, or the arrival hyperbola into a parking orbit:
 | Earth, Venus, Mars | circular orbit 300 km above the surface |
 | Mercury | 200 km |
 | Ceres | 50 km |
-| Jupiter, Saturn | circular orbit at the distance of Callisto and Titan |
-| Vesta, Psyche, Eros, Bennu, Ryugu | rendezvous: the burn equals v∞ |
+| Jupiter, Saturn, Uranus, Neptune | circular orbit at the distance of Callisto, Titan, Titania and Triton |
+| Pluto | 100 km |
+| Vesta, Psyche and the other 18 asteroids | rendezvous: the burn equals v∞ |
 | Earth–Moon L1 | the cheaper of a burn at L1 and a drop to a 300 km perigee with a perigee burn; 3.77 km/s to or from low Earth orbit |
+| Moon, Europa, Ganymede, Callisto, Titan, Enceladus, Triton | low orbit around the moon (100 km; Titan 1,000 km, Enceladus 50 km) |
+| Phobos, Deimos | rendezvous with the moon |
+
+**Moons** share their planet's heliocentric legs. Arriving at a moon, the planetocentric hyperbola reaches the moon's
+orbit radius a with speed √(v∞² + 2μₚ/a); the ship meets the moon with the difference to the moon's speed √(μₚ/a) (the
+sum for retrograde Triton) and captures into low orbit in one Oberth burn, √(v_rel² + 2μₘ/r) − √(μₘ/r). Inside one planet
+system the engine connects places directly: a Hohmann ellipse around the planet between the two orbit radii, with an
+Oberth escape or capture at each moon. Low Earth orbit to low lunar orbit comes to 3.93 km/s in 5 days (standard
+budgets: about 4.0 km/s); Earth–Moon L1 to low lunar orbit 0.68 km/s. Without gravity assists from other moons, the
+costs at the outer moons are upper bounds: real missions tour the moons to lower them. GM, radius and orbit radius come
+from JPL SSD's satellite tables.
 
 The network, the flyby search, the station precompute and the engine import these values from one module. A test
 compares them with the JavaScript engine's values (`network/nodes.js`).
+
+## Places and daily data
+
+The engine knows 40 places: 30 bodies with their own heliocentric legs (`conventions.HELIO`: the planets and Pluto, Ceres,
+Vesta, Psyche, Pallas, Hygiea, Themis, Juno, six near-Earth asteroids, five Jupiter Trojans), nine moons and Earth–Moon L1.
+`engine/daily.py` computes transfer alternatives for all 870 ordered pairs of the 30 bodies for every day from
+2026-11-01 to 2100-12-31: 100 flight times from 0.3 to 2.5 Hohmann times, at most 100 years, and a refinement of the
+three cheapest local minima each day (about 2.6 billion Lambert solutions in all; 65 minutes on 12 cores). Cost valleys
+next to the 180° transfer singularity can be narrower than a coarser grid: with 40 flight times the daily data missed
+a valley on Psyche to Mercury by 8.5 km/s. Against a scan of 3,000 flight times with golden-section refinement on 300
+random route-dates, the stored cheapest transfer lies a median 0.0015 km/s above the optimum, within 0.08 km/s on 95%
+and within 0.27 km/s on 99% of them; the largest gap was 1.35 km/s. Compared with the earlier 10-day network on the
+same dates, 73% of route-dates are cheaper (median −0.18 km/s, mostly from the longer flight times) and 0.8% dearer,
+mostly Saturn and Jupiter to Mercury, where the earlier grid happened to sample a narrow valley. Slow autonomous cargo makes long flights
+worth listing; for inner routes they add little, since waiting for the next window is free in the journey graph.
+
+**Positions.** Planets and Pluto come from DE440 through pykep until 2149 and from JPL Horizons barycentre states (DE441)
+afterwards. Small bodies come from daily JPL Horizons states to 2205, interpolated with cubic Hermite polynomials.
+Bennu's Horizons solution ends on 2135-09-30, after its close Earth approach; the engine skips arrivals after a body's
+ephemeris ends and raises an error for any date outside it. The ephemeris files are not in git (`make ephemeris`); each
+data release archives the exact copies.
+
+**Two corrections (2026-10-31).** pykep's DE440 interface reads dates as UTC, while every date in solmaps is TDB, as in
+the Horizons files. The planets ran 64.184 s ahead of the small bodies, about 2,000 km along Earth's orbit; with the
+correction DE440 and Horizons agree within 10 m. The earlier 10-day Horizons interpolation missed the true positions by
+up to 304 km for Eros, 1,300 km for Ryugu and 8,700 km for Bennu near their Earth encounters; daily states remove that.
+
+**Independent checks of the transfer data.** On 400 random published entries: the stored costs reproduce within
+0.0055 km/s; integrating each chosen transfer with scipy (two-body, DOP853) lands a median 43 m and at most 9.5 km from
+the target; a separate universal-variable Lambert solver (`network/engine.js`) gives the same departure velocities
+within 7 µm/s. `tests/test_daily.py` repeats a recheck on every daily run.
 
 ## Transfer alternatives
 

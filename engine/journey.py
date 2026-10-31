@@ -25,7 +25,7 @@ bodies) take at most IMPULSIVE_SHARE of the flight time; longer burns need the c
 """
 import heapq, math
 import numpy as np
-from engine.conventions import SITES, PLACES, FUEL_SOURCES, NAMES, planet_side_mode, planet_side_plan, pass_days, end_state, parking_period_s, helio, local_transfer
+from engine.conventions import SITES, PLACES, FUEL_SOURCES, NAMES, planet_side_mode, planet_side_arr, planet_side_plan, pass_days, end_state, parking_period_s, helio, local_transfer
 from engine.ship import burn
 
 IMPULSIVE_SHARE = 0.05      # heliocentric impulses may last at most this share of the flight time
@@ -68,15 +68,9 @@ class Network:
             if i is None:
                 res = None
             else:
-                arr = self.alts.alt[i].astype(float)       # [date, k, (tof, vinf_dep, vinf_arr)]
+                arr = self.alts.route(i).astype(float)     # [date, k, (tof, vinf_dep, vinf_arr)]
                 vdep, varr = arr[:, :, 1], arr[:, :, 2]
-                def side(node, mode, v):
-                    out = np.full(v.shape + (2,), np.nan)
-                    for idx in np.ndindex(v.shape):
-                        if not math.isnan(v[idx]):
-                            out[idx] = planet_side_mode(node, float(v[idx]), mode)
-                    return out[..., 0], out[..., 1]
-                d1, s1 = side(a, ma[0], vdep); d2, s2 = side(b, mb[0], varr)
+                d1, s1 = planet_side_arr(a, vdep, ma[0]); d2, s2 = planet_side_arr(b, varr, mb[0])
                 t1 = np.full_like(d1, pass_days(a, ma[1]) if ma[0] == 'passes' else 0.0)
                 t2 = np.full_like(d2, pass_days(b, mb[1]) if mb[0] == 'passes' else 0.0)
                 res = (arr[:, :, 0], d1, d2, s1, s2, t1, t2)

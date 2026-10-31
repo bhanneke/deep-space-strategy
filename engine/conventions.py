@@ -136,7 +136,7 @@ def planet_side_mode(node, vinf, mode):
     escape (Edelbaum: the circular speed), then an impulse of vinf at the edge of the sphere of influence; at L1 only the
     burn at L1 itself, since the perigee drop needs a short burn near Earth."""
     e = end_state(node)
-    if mode in ('burn', 'passes') or e['kind'] == 'rendezvous':
+    if mode in ('burn', 'passes') or e['kind'] in ('rendezvous', 'moon'):   # spirals only from parking orbits
         return planet_side_dv(node, vinf), 0.0
     if e['kind'] == 'l1':
         return math.sqrt(vinf * vinf + V_ESC_L1 ** 2) - V_L1, 0.0
@@ -182,6 +182,32 @@ def local_transfer(a, b):
         return abs(v_transfer - v_orbit)
     days = math.pi * math.sqrt(at ** 3 / mu) / 86400
     return end(a, v1c, v1t), end(b, v2c, v2t), days
+
+def planet_side_arr(node, vinf, mode='burn'):
+    """planet_side_mode for an array of excess speeds (NaN stays NaN): (total, spiral part) arrays, same formulas"""
+    import numpy as np
+    v = np.asarray(vinf, dtype=np.float64); e = end_state(node); z = np.zeros_like(v)
+    if e['kind'] == 'rendezvous':
+        return v.copy(), z
+    if e['kind'] == 'moon':
+        vh = np.sqrt(v * v + 2 * e['mu_p'] / e['a']); vm = math.sqrt(e['mu_p'] / e['a'])
+        rel = vh + vm if e['retro'] else vh - vm
+        if e['alt'] is None:
+            return np.abs(rel), z
+        r = e['R'] + e['alt']
+        return np.sqrt(rel * rel + 2 * e['mu'] / r) - math.sqrt(e['mu'] / r), z
+    if e['kind'] == 'l1':
+        at_l1 = np.sqrt(v * v + V_ESC_L1 ** 2) - V_L1
+        if mode == 'spiral':
+            return at_l1, z
+        rp = 6378 + 300
+        v_apo = math.sqrt(2 * GM_E * rp / (R_L1 * (R_L1 + rp)))
+        via = (V_L1 - v_apo) + np.sqrt(v * v + 2 * GM_E / rp) - v_apo * R_L1 / rp
+        return np.minimum(at_l1, via), z
+    vc = math.sqrt(e['mu'] / e['r'])
+    if mode == 'spiral':
+        return vc + v, np.where(np.isnan(v), np.nan, vc)
+    return np.sqrt(v * v + 2 * e['mu'] / e['r']) - vc, z
 
 def vinf_from_planet_side(node, dv):
     """inverse of planet_side_dv for parking orbits and rendezvous"""

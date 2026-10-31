@@ -18,6 +18,7 @@ pages = {
     'index.html': root / 'site' / 'index.html',
     'how-it-works.html': root / 'site' / 'how-it-works.html',
     'technical.html': root / 'site' / 'technical.html',
+    'status.html': root / 'site' / 'status.html',
     'atlas.html': root / 'atlas' / 'solar-system-atlas.html',
     'growth-map.html': root / 'network' / 'solar-system-growth-map.html',
     'solar-system-3d.html': root / 'atlas3d' / 'solar-system-3d.html',

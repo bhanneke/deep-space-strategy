@@ -94,8 +94,9 @@ class HorizonsBody:
     decades the network covers; two-body motion from fixed elements drifts. Same pykep interface as DE440Planet.
     """
     def __init__(self, name):
+        import numpy as np
         d = json.load(open(f'{HORIZONS_DIR}/{name}.json'))
-        self.name, self.rows = name, d['rows']
+        self.name, self.rows = name, np.asarray(d['rows'], dtype=np.float64)   # 3.7 MB per daily body; lists took ~15 MB
         self.t0, self.h = self.rows[0][0] - 2451544.5, self.rows[1][0] - self.rows[0][0]
         self.t1 = self.rows[-1][0] - 2451544.5
         self.mu_self, self.radius = SMALL_PHYS.get(name, (1.0, 1e3))

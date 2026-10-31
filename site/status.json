@@ -1,0 +1,146 @@
+{
+ "built": "2026-10-31 23:02",
+ "mini": {
+  "jobs": {
+   "ceres:earth,mars": {
+    "queue": 1,
+    "started": "2026-10-31 14:28:28"
+   },
+   "flyby_mars": {
+    "queue": 2,
+    "started": "2026-10-31 15:39:44"
+   }
+  },
+  "counts": {
+   "run3_ceres_earth_mars.log": 143,
+   "q2_flyby_mars.log": 164
+  },
+  "lowthrust_rows": 0,
+  "checked": "2026-10-31 23:02"
+ },
+ "rows": [
+  {
+   "group": "Positions",
+   "name": "Daily JPL Horizons states: 21 small bodies to 2205, planets 2140\u20132205",
+   "done": 30,
+   "total": 30,
+   "unit": "bodies",
+   "where": "make ephemeris; archived with each data release"
+  },
+  {
+   "group": "Direct transfers",
+   "name": "Daily transfer alternatives, 30 bodies, 2026\u20132100, flights up to 100 years",
+   "done": 870,
+   "total": 870,
+   "unit": "routes",
+   "note": "2.64 of 2.64 billion Lambert solutions; 40 places with moons and Earth\u2013Moon L1",
+   "where": "data/daily (release pending)"
+  },
+  {
+   "group": "Mac Mini, queue 1",
+   "name": "Flyby search, returns from Ceres",
+   "state": "running",
+   "since": "2026-10-31 14:28:28",
+   "note": "143 searches finished"
+  },
+  {
+   "group": "Mac Mini, queue 1",
+   "name": "Flyby search, returns from Vesta",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 1",
+   "name": "Flyby search, returns from Psyche",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 1",
+   "name": "Flyby search, returns from Jupiter",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 1",
+   "name": "Flyby search rerun, Earth to Jupiter, Saturn, Mercury",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 1",
+   "name": "Flyby search rerun, Earth to Ceres, Vesta, Psyche",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 1",
+   "name": "Flyby search rerun, Mars to Jupiter, Saturn",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 1",
+   "name": "Flyby search rerun, Mars to the belt",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 2",
+   "name": "Flyby search, Mars to Earth, Venus, Mercury",
+   "state": "running",
+   "since": "2026-10-31 15:39:44",
+   "note": "164 searches finished"
+  },
+  {
+   "group": "Mac Mini, queue 2",
+   "name": "Flyby search, Earth to Mars, Venus, Eros, Bennu, Ryugu",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 2",
+   "name": "Flyby search, Saturn to Earth, Mars",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 2",
+   "name": "Earth\u2013Mars cyclers, 2027\u20132097",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 2",
+   "name": "Low-thrust atlas: electric ship, 132 routes, every two-year window",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Mac Mini, queue 2",
+   "name": "Sampled trajectories for every flyby result",
+   "state": "queued",
+   "since": "",
+   "note": ""
+  },
+  {
+   "group": "Open for contributors",
+   "name": "Flyby search for the remaining body pairs (36 two-year windows each)",
+   "done": 0,
+   "total": 818,
+   "unit": "pairs",
+   "note": "work units and verification in preparation"
+  }
+ ]
+}

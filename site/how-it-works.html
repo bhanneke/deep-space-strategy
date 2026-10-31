@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
 <link rel="stylesheet" href="page.css">
 <main>
-  <p><a href="index.html">Deep Space Strategy</a> · <a href="technical.html">Technical documentation</a></p>
+  <p><a href="index.html">Deep Space Strategy</a> · <a href="technical.html">Technical documentation</a> · <a href="status.html">Computation status</a></p>
   <h1>How solmaps works</h1>
   <p>For the temporal-graph concept, every formula and the references, see the <a href="technical.html">technical documentation</a>.</p>
   <p class="lede">solmaps is the open map and route engine of Deep Space Strategy. It computes what it costs to travel between places in the solar system on any date until 2100, and what that means for which places matter. This page lists the data, the models, the checks against real missions and the limits.</p>
@@ -19,15 +19,15 @@
   <div class="tablewrap"><table>
     <thead><tr><th>Use</th><th>Source</th><th>Range and accuracy</th></tr></thead>
     <tbody>
-      <tr><td>Route costs (growth map, 3D routes)</td><td>JPL DE440 ephemeris via ESA pykep (planet-system barycentres)</td><td>About 1849 to 2150; agrees with the JPL Table 1 positions to 0.00003 AU for Mars in 2040</td></tr>
+      <tr><td>Route costs (growth map, 3D routes)</td><td>JPL DE440 ephemeris via ESA pykep (planet-system barycentres) to 2149, JPL Horizons (DE441) afterwards</td><td>Agrees with Horizons within 10 m; agrees with the JPL Table 1 positions to 0.00003 AU for Mars in 2040</td></tr>
       <tr><td>Planet positions on the maps</td><td>JPL "Approximate Positions of the Planets", Table 1</td><td>Valid 1800 to 2050; later dates on the maps are approximate and marked</td></tr>
-      <tr><td>Ceres, Vesta, Psyche, Pluto, Eros, Bennu, Ryugu</td><td>JPL Small-Body Database elements, two-body motion</td><td>The model ignores the pull of the planets, so accuracy falls over decades</td></tr>
+      <tr><td>Ceres, Vesta, Psyche, Eros, Bennu, Ryugu and 15 more asteroids</td><td>Daily JPL Horizons state vectors (perturbed by the planets)</td><td>2026 to 2205; Bennu's solution ends in 2135, after its close Earth approach</td></tr>
       <tr><td>Moons</td><td>JPL mean elements at J2000, period from the parent's mass</td><td>Rough; the 3D atlas spreads moon distances out for visibility</td></tr>
     </tbody>
   </table></div>
 
   <h2>Direct transfers</h2>
-  <p>A direct route is one transfer arc from one site to another. For every departure date, every ten days from November 2026 to the end of 2100, solmaps solves Lambert's problem (the arc that connects two positions in a given flight time) for 30 flight times between 0.3 and 1.8 times the Hohmann time, and keeps the cheapest. That gives 132 routes between 12 sites over 2,709 departure dates.</p>
+  <p>A direct route is one transfer arc from one site to another. For every departure date, every ten days from November 2026 to the end of 2100, solmaps solves Lambert's problem (the arc that connects two positions in a given flight time) for 100 flight times between 0.3 and 2.5 times the Hohmann time (at most 100 years) and keeps the cheapest after a final refinement. The maps on this site show 132 routes between 12 sites over 2,709 departure dates. The engine computes the same for every day and for 30 bodies: 870 routes, about 2.6 billion Lambert solutions. The <a href="status.html">computation status</a> page lists what is computed.</p>
   <p>The cost includes the burn that leaves a parking orbit and the burn that captures into the destination's parking orbit, using the Oberth relation <code>Δv = √(v∞² + 2μ/r) − √(μ/r)</code>. Parking orbits: 300 km above Earth, Mars and Venus, 200 km above Mercury, 50 km above Ceres, and circular orbits at the distance of Callisto (Jupiter) and Titan (Saturn). At small asteroids a ship only matches their velocity. All burns are impulsive; low-thrust electric propulsion is not modelled.</p>
 
   <h2>Flyby routes</h2>

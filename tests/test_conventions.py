@@ -77,3 +77,16 @@ def test_retrograde_triton_costs_more_than_a_prograde_twin():
         assert C.planet_side_dv('triton', 4.0) > C.planet_side_dv('triton_prograde', 4.0) + 3
     finally:
         del C.MOONS['triton_prograde'], C.NAMES['triton_prograde']
+
+
+def test_vectorised_planet_side_matches_the_scalar_formulas():
+    import numpy as np
+    v = np.array([0.0, 0.7, 2.5, 6.0, 11.0, np.nan])
+    for node in C.PLACES:
+        for mode in ('burn', 'spiral'):
+            tot, spi = C.planet_side_arr(node, v, mode)
+            for x, t, s in zip(v, tot, spi):
+                if np.isnan(x):
+                    assert np.isnan(t); continue
+                ref = C.planet_side_mode(node, float(x), mode)
+                assert t == pytest.approx(ref[0], abs=1e-12) and s == pytest.approx(ref[1], abs=1e-12)
