@@ -57,6 +57,10 @@ a{color:var(--c-water)}
 .panel h3{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin:0}
 .panel p{margin:0;line-height:1.5}
 .caveat{font-size:12.5px;color:var(--dim);line-height:1.5}
+.n3card{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));width:min(400px,calc(100vw - 32px));max-height:52vh;overflow:auto;background:var(--deck);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.45;z-index:2}
+.n3card h3{font-family:var(--f-display);font-weight:600;font-size:19px;letter-spacing:.03em;margin:4px 0}.n3card p{margin:4px 0}
+.n3card table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}.n3card th,.n3card td{text-align:left;padding:2px 6px 2px 0;border-bottom:1px solid var(--rule)}.n3card th{color:var(--dim);font-weight:500}
+.n3tip{position:fixed;z-index:4;background:var(--deck-solid);border:1px solid var(--rule);border-radius:6px;padding:6px 9px;font-size:12.5px;pointer-events:none;max-width:270px}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
 .kv span{color:var(--dim)}
 .kv b{font-weight:500;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
@@ -86,6 +90,7 @@ a{color:var(--c-water)}
 <div id="stage" aria-label="3D view of the solar system"></div>
 <svg id="netview" role="img" aria-label="Network view: distance from the centre shows travel time" style="position:fixed;inset:0;width:100%;height:100%;display:none;z-index:1;font-family:var(--f-body)"></svg>
 <div id="labels" aria-hidden="true"></div>
+<div id="net3d" style="position:fixed;inset:0;display:none;z-index:1"><canvas id="n3canvas" aria-label="Whole network in 3D: distance between two places shows travel time"></canvas><div id="n3labels" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div><div id="n3card" class="n3card" aria-live="polite"></div><div id="n3tip" class="n3tip" role="tooltip" hidden></div></div>
 
 <header class="top">
   <div class="brand"><span style="color:var(--sun);font-size:.62em;letter-spacing:.12em;display:block;line-height:1">DEEP SPACE STRATEGY · GEOGRAPHY AND TOPOLOGY</span>3D Atlas</div>
@@ -96,7 +101,7 @@ a{color:var(--c-water)}
     <select id="evMin" aria-label="Minimum evidence"><option value="0">all evidence</option><option value="1">inferred and better</option><option value="2">strong and better</option><option value="3">confirmed only</option></select></div>
   <div class="grp"><select id="routeMode" aria-label="Route direction"><option value="from">Routes from</option><option value="to">Routes to</option></select><select id="routeFrom" aria-label="Site for routes"><option value="">none</option></select>
     <select id="horizon" aria-label="Waiting horizon"><option value="18">wait up to 6 months</option><option value="37" selected>wait up to 1 year</option><option value="79">wait up to 26 months</option></select><label class="sl"><input type="checkbox" id="sling" checked> slingshots</label></div>
-  <div class="grp"><button type="button" id="btnJourney" aria-pressed="false">Journeys</button><button type="button" id="btnNet" aria-pressed="false">Network view</button><select id="nvMetric" aria-label="Distance in the network view" hidden><option value="time">distance = travel time</option><option value="fuel">distance = fuel</option></select><button type="button" id="btnTop">Top view</button><button type="button" id="btnReset">Whole system</button><button type="button" id="btnLabels" aria-pressed="true">Labels</button></div>
+  <div class="grp"><button type="button" id="btnJourney" aria-pressed="false">Journeys</button><button type="button" id="btnNet" aria-pressed="false">Network view</button><button type="button" id="btnNet3" aria-pressed="false">Whole network</button><span id="n3ctl" class="grp" hidden><select id="n3Color" aria-label="Line colour in the whole-network view"><option value="imbalance">colour = go-return imbalance</option><option value="time">colour = travel time</option><option value="cost">colour = km/s</option></select><select id="n3Scale" aria-label="Distance scale"><option value="sqrt">square-root scale</option><option value="linear">linear scale</option></select></span><select id="nvMetric" aria-label="Distance in the network view" hidden><option value="time">distance = travel time</option><option value="fuel">distance = fuel</option></select><button type="button" id="btnTop">Top view</button><button type="button" id="btnReset">Whole system</button><button type="button" id="btnLabels" aria-pressed="true">Labels</button></div>
 </header>
 
 <aside class="panel" id="panel" aria-live="polite"></aside>
@@ -730,7 +735,7 @@ $('routeMode').addEventListener('change', e => { state.routeMode = e.target.valu
 /* ---------- controls ---------- */
 const DAY0 = Date.UTC(2026, 0, 1), DAY1 = Date.UTC(2100, 11, 31), TODAY = Date.UTC(2026, 9, 30);
 const jdOf = ms => ms / 864e5 + 2440587.5, msOf = jd => (jd - 2440587.5) * 864e5;
-function setJD(jd) { state.jd = jd; $('dateOut').textContent = new Date(msOf(jd)).toISOString().slice(0, 10) + (msOf(jd) > Date.UTC(2050, 11, 31) ? ' ~' : ''); $('dateSlider').value = Math.round((msOf(jd) - DAY0) / 864e5); place(jd); if (typeof updateRoutes === 'function' && NET) updateRoutes(); if (STN_READY) { updateStationMarkers(); if (state.netView && kOf(jd) !== state.nvK) { state.nvK = kOf(jd); drawNetView(); } } }
+function setJD(jd) { state.jd = jd; $('dateOut').textContent = new Date(msOf(jd)).toISOString().slice(0, 10) + (msOf(jd) > Date.UTC(2050, 11, 31) ? ' ~' : ''); $('dateSlider').value = Math.round((msOf(jd) - DAY0) / 864e5); place(jd); if (typeof updateRoutes === 'function' && NET) updateRoutes(); if (STN_READY) { updateStationMarkers(); if (state.netView && kOf(jd) !== state.nvK) { state.nvK = kOf(jd); drawNetView(); } if (state.net3d && kOf(jd) !== state.n3K) { state.n3K = kOf(jd); drawNet3d(); } } }
 $('dateSlider').max = Math.round((DAY1 - DAY0) / 864e5);
 $('dateSlider').addEventListener('input', e => setJD(jdOf(DAY0 + (+e.target.value) * 864e5)));
 $('chips').innerHTML = CATS.map(c => `<button type="button" class="chip" data-cat="${c.id}" aria-pressed="true">${glyph(c)}${c.label}</button>`).join('');
@@ -899,7 +904,7 @@ function journeyPanel() {
 function bindJourney() {
   const P = $('panel'), q = id => P.querySelector('#' + id);
   if (!q('jPlan')) return;
-  for (const id of ['jFrom', 'jTo', 'jMode', 'jB', 'jYears', 'jStations']) q(id).addEventListener('change', e => { state[id] = ['jB', 'jYears', 'jStations'].includes(id) ? +e.target.value : e.target.value; if (id === 'jMode' || id === 'jStations') { updateStationMarkers(); renderPanel(); } drawNetView(); });
+  for (const id of ['jFrom', 'jTo', 'jMode', 'jB', 'jYears', 'jStations']) q(id).addEventListener('change', e => { state[id] = ['jB', 'jYears', 'jStations'].includes(id) ? +e.target.value : e.target.value; if (id === 'jMode' || id === 'jStations') { updateStationMarkers(); renderPanel(); } drawNetView(); if (state.net3d) drawNet3d(); });
   q('jPlan').addEventListener('click', () => {
     state.jResult = state.jFrom === state.jTo ? null : planJourney(state.jFrom, state.jTo, Math.max(0, kOf(state.jd)), state.jMode, state.jB, state.jYears);
     drawJourney(); renderPanel();
@@ -1095,6 +1100,240 @@ function bindTabs() {
   if (j) j.addEventListener('click', () => { state.jTab = 'journey'; renderPanel(); });
   if (c) c.addEventListener('click', () => { state.jTab = 'cargo'; renderPanel(); });
 }
+/* ---------- whole network in 3D: distance between two places = travel time ---------- */
+// For the date shown, T[a][b] is the earliest arrival at b for a ship leaving a, in years, with the journey planner's
+// settings (refuel or one tank, budget, time limit, stations). The layout places every node in 3D so that distances
+// match the symmetric part (T + T')/2 as closely as possible (classical scaling, then stress minimisation, warm-started
+// from the previous date so the picture moves smoothly). The antisymmetric part cannot appear in any layout; the view
+// reports it as the go-return imbalance, per pair I = (T_ab - T_ba) / (T_ab + T_ba) and for the whole network
+// A = ||T - T'|| / ||T + T'||.
+Object.assign(state, { net3d: false, n3Color: 'imbalance', n3Scale: 'sqrt', n3Focus: null, n3K: null });
+const N3 = { el: $('net3d'), canvas: $('n3canvas'), labels: {}, coords: null, data: null, curve: null, curveKey: null };
+const n3renderer = new THREE.WebGLRenderer({ canvas: N3.canvas, antialias: true });
+n3renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const n3scene = new THREE.Scene(); n3scene.background = new THREE.Color(css('--void'));
+const n3camera = new THREE.PerspectiveCamera(50, 1, 0.01, 1000); n3camera.position.set(0, 13, 34);
+const n3controls = new THREE.OrbitControls(n3camera, N3.canvas); n3controls.enableDamping = true;
+n3scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+const n3nodes = new THREE.Group(), n3edges = new THREE.Group(); n3scene.add(n3edges); n3scene.add(n3nodes);
+
+function n3ids() { const live = activeStations(); return SITE_IDS.filter((id, i) => i < NSITE || live.has(id)); }
+function n3matrix(k0) {
+  const ids = n3ids(), n = ids.length, T = ids.map(() => new Array(n).fill(NaN)), C = ids.map(() => new Array(n).fill(NaN));
+  ids.forEach((a, i) => {
+    const r = reachAll(a, k0, state.jMode, state.jB, state.jYears);
+    ids.forEach((b, j) => { const p = r.first[SI[b]]; if (i === j) { T[i][j] = 0; C[i][j] = 0; } else if (p) { T[i][j] = (jdOfK(p.k) - jdOfK(k0)) / 365.25; C[i][j] = p.c; } });
+  });
+  return { ids, T, C, k0 };
+}
+const n3f = y => state.n3Scale === 'sqrt' ? Math.sqrt(y) : y;
+function n3target(T) {                                   // symmetric target distances and weights (0 where unknown)
+  const n = T.length, D = T.map(() => new Array(n).fill(0)), W = T.map(() => new Array(n).fill(0));
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const a = T[i][j], b = T[j][i], v = isNaN(a) && isNaN(b) ? NaN : isNaN(a) ? b : isNaN(b) ? a : (a + b) / 2;
+    if (!isNaN(v)) { D[i][j] = D[j][i] = n3f(v); W[i][j] = W[j][i] = 1; }
+  }
+  return { D, W };
+}
+function n3classical(D, W) {                             // classical scaling: top three eigenvectors of -J D^2 J / 2
+  const n = D.length; let mx = 0; for (const r of D) for (const v of r) mx = Math.max(mx, v);
+  const D2 = D.map((r, i) => r.map((v, j) => { const d = i === j ? 0 : W[i][j] ? v : 1.2 * mx; return d * d; }));
+  const rm = D2.map(r => r.reduce((s, v) => s + v, 0) / n), gm = rm.reduce((s, v) => s + v, 0) / n;
+  const B = D2.map((r, i) => r.map((v, j) => -0.5 * (v - rm[i] - rm[j] + gm)));
+  const X = Array.from({ length: n }, () => [0, 0, 0]);
+  for (let c = 0; c < 3; c++) {                          // power iteration with deflation
+    let v = Array.from({ length: n }, (_, i) => Math.sin(1.7 * i + c + 1)), lam = 0;
+    for (let it = 0; it < 300; it++) {
+      const w = B.map(r => r.reduce((s, x, j) => s + x * v[j], 0)), nw = Math.hypot(...w) || 1;
+      lam = w.reduce((s, x, j) => s + x * v[j], 0); v = w.map(x => x / nw);
+    }
+    const s = Math.sqrt(Math.max(lam, 0)); v.forEach((x, i) => { X[i][c] = x * s; });
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) B[i][j] -= lam * v[i] * v[j];
+  }
+  return X;
+}
+function n3stress(X, D, W) {                              // Kruskal stress-1 of the layout
+  let num = 0, den = 0;
+  for (let i = 0; i < X.length; i++) for (let j = i + 1; j < X.length; j++) if (W[i][j]) {
+    const d = Math.hypot(X[i][0] - X[j][0], X[i][1] - X[j][1], X[i][2] - X[j][2]); num += (d - D[i][j]) ** 2; den += D[i][j] ** 2;
+  }
+  return den ? Math.sqrt(num / den) : 0;
+}
+function n3layout(D, W, init) {                           // stress minimisation by gradient steps from the start layout
+  const n = D.length, X = init.map(p => p.slice());
+  for (let it = 0; it < 400; it++) {
+    const lr = 0.08 * (1 - it / 450);
+    for (let i = 0; i < n; i++) {
+      const g = [0, 0, 0]; let m = 0;
+      for (let j = 0; j < n; j++) if (i !== j && W[i][j]) {
+        const dx = X[i].map((x, c) => x - X[j][c]), d = Math.hypot(...dx) || 1e-6, f = (d - D[i][j]) / d;
+        for (let c = 0; c < 3; c++) g[c] += f * dx[c]; m++;
+      }
+      if (m) for (let c = 0; c < 3; c++) X[i][c] -= lr * g[c] / m;
+    }
+  }
+  return X;
+}
+function n3asym(T) {                                     // ||T - T'|| / ||T + T'|| over pairs known both ways
+  let a = 0, s = 0;
+  for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) {
+    const x = T[i][j], y = T[j][i]; if (isNaN(x) || isNaN(y)) continue; a += 2 * (x - y) ** 2; s += 2 * (x + y) ** 2;
+  }
+  return s ? Math.sqrt(a / s) : NaN;
+}
+const n3imb = (x, y) => isNaN(x) || isNaN(y) || x + y <= 0 ? NaN : (x - y) / (x + y);
+
+function n3compute() {
+  const k0 = Math.max(0, kOf(state.jd)), M = n3matrix(k0), { D, W } = n3target(M.T);
+  let init;
+  if (N3.coords && N3.coords.ids.join() === M.ids.join() && N3.coords.scale === state.n3Scale) init = N3.coords.X;
+  else init = n3classical(D, W);
+  const X = n3layout(D, W, init);
+  N3.coords = { ids: M.ids, X, scale: state.n3Scale };
+  N3.data = { ...M, D, W, X, stress: n3stress(X, D, W), asym: n3asym(M.T) };
+}
+function n3color(i, j) {
+  const { T, C } = N3.data;
+  if (state.n3Color === 'imbalance') {
+    const v = Math.abs(n3imb(T[i][j], T[j][i])); if (isNaN(v)) return new THREE.Color(0x5a6680);
+    return new THREE.Color(0x5a6680).lerp(new THREE.Color(0xf2b84b), Math.min(1, v / 0.5));
+  }
+  if (state.n3Color === 'cost') { const c = [C[i][j], C[j][i]].filter(x => !isNaN(x)); return c.length ? rampColor(Math.min(...c)) : new THREE.Color(0x5a6680); }
+  const t = [T[i][j], T[j][i]].filter(x => !isNaN(x)); if (!t.length) return new THREE.Color(0x5a6680);
+  return new THREE.Color(0x8fd3ff).lerp(new THREE.Color(0x1d3a66), Math.min(1, Math.sqrt(Math.min(...t) / 15)));
+}
+function n3draw() {
+  clearGroup(n3nodes); clearGroup(n3edges);
+  const d = N3.data; if (!d) return;
+  const n = d.ids.length, X = d.X;
+  let ext = 1e-6; for (const p of X) ext = Math.max(ext, Math.hypot(...p));
+  const k = 10 / ext, P = X.map(p => new THREE.Vector3(p[0] * k, p[1] * k, p[2] * k)); N3.P = P;
+  const fi = state.n3Focus ? d.ids.indexOf(state.n3Focus) : -1;
+  const pos = [], col = []; N3.pairs = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    if (!d.W[i][j]) continue;
+    const c = n3color(i, j), dimmed = fi >= 0 && i !== fi && j !== fi, f = dimmed ? 0.12 : 1;
+    pos.push(P[i].x, P[i].y, P[i].z, P[j].x, P[j].y, P[j].z);
+    col.push(c.r * f, c.g * f, c.b * f, c.r * f, c.g * f, c.b * f); N3.pairs.push([i, j]);
+    const I = n3imb(d.T[i][j], d.T[j][i]);              // arrowhead toward the quicker direction's destination
+    if (state.n3Color === 'imbalance' && Math.abs(I) >= 0.1 && !dimmed) {
+      const [a, b] = I < 0 ? [i, j] : [j, i], dir = P[b].clone().sub(P[a]), len = dir.length();
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.3, 10), new THREE.MeshBasicMaterial({ color: c }));
+      cone.position.copy(P[a].clone().add(dir.clone().multiplyScalar(0.55)));
+      cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()); if (len > 0.5) n3edges.add(cone);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  N3.lines = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9 }));
+  n3edges.add(N3.lines);
+  d.ids.forEach((id, i) => {
+    const stn = id.startsWith('stn'), isF = i === fi, body = BY[id];
+    const color = isF ? 0xf2b84b : stn ? 0xf2b84b : (objs[id] && objs[id].mesh && objs[id].mesh.material.color) || 0xdfe5ef;
+    const m = new THREE.Mesh(stn ? new THREE.OctahedronGeometry(0.22) : new THREE.SphereGeometry(isF ? 0.32 : 0.22, 20, 14), new THREE.MeshBasicMaterial({ color }));
+    m.position.copy(P[i]); m.userData.id = id; n3nodes.add(m);
+    let l = N3.labels[id];
+    if (!l) { l = document.createElement('div'); l.className = 'lab'; $('n3labels').appendChild(l); N3.labels[id] = l; }
+    l.textContent = nodeName(id); l.classList.toggle('sel', isF); l.style.opacity = fi >= 0 && !isF && !d.W[fi][i] ? 0.35 : 1;
+  });
+  for (const [id, l] of Object.entries(N3.labels)) if (!d.ids.includes(id)) l.hidden = true;
+  n3card();
+}
+const n3fmt = y => isNaN(y) ? 'not within the time limit' : y < 0.1 ? Math.round(y * 365.25) + ' days' : y.toFixed(1) + ' yr';
+function n3card() {
+  const d = N3.data, fi = state.n3Focus ? d.ids.indexOf(state.n3Focus) : -1, cv = N3.curve;
+  let h = `<h3>Whole network · ${isoOf(jdOfK(d.k0))}</h3>
+    <p>Distance between two places: travel time in years${state.n3Scale === 'sqrt' ? ' on a square-root scale' : ''}, the average of both directions (earliest arrival, ${state.jMode === 'refuel' ? 'refuelling at stops, at most ' + state.jB + ' km/s per leg' : 'one tank, at most ' + state.jB + ' km/s in total'}, within ${state.jYears} years).</p>
+    <p><strong>Go-return imbalance of the network: ${isNaN(d.asym) ? '–' : (100 * d.asym).toFixed(0) + '%'}</strong> of its travel times differ by direction (‖T − Tᵀ‖ / ‖T + Tᵀ‖). No layout can show that part. <strong>Layout error: ${(100 * d.stress).toFixed(0)}%</strong> (stress of the shown distances against the two-way averages).</p>`;
+  if (cv && cv.A.length > 1) {
+    const w = 300, hh = 46, xs = i => 4 + (w - 8) * i / (cv.A.length - 1), mx = Math.max(...cv.A.filter(x => !isNaN(x)), 0.01);
+    const pts = cv.A.map((a, i) => isNaN(a) ? null : `${xs(i).toFixed(1)},${(hh - 4 - (hh - 10) * a / mx).toFixed(1)}`).filter(Boolean).join(' ');
+    const now = cv.k.findIndex(k => k >= d.k0);
+    h += `<svg viewBox="0 0 ${w} ${hh + 14}" width="100%" role="img" aria-label="Network imbalance over time"><polyline points="${pts}" fill="none" stroke="#f2b84b" stroke-width="1.5"/>${now >= 0 ? `<line x1="${xs(now)}" x2="${xs(now)}" y1="2" y2="${hh}" stroke="#8d99b0" stroke-dasharray="2 2"/>` : ''}
+      <text x="4" y="${hh + 12}" font-size="10" fill="#8d99b0">${isoOf(jdOfK(cv.k[0])).slice(0, 4)}</text><text x="${w - 4}" y="${hh + 12}" font-size="10" fill="#8d99b0" text-anchor="end">${isoOf(jdOfK(cv.k[cv.k.length - 1])).slice(0, 4)}</text>
+      <text x="${w - 4}" y="10" font-size="10" fill="#8d99b0" text-anchor="end">max ${(100 * mx).toFixed(0)}%</text></svg>
+      <p class="caveat">Network imbalance every six months${cv.done ? '' : ' (computing…)'}.</p>`;
+  }
+  if (fi >= 0) {
+    const rows = d.ids.map((id, j) => ({ id, j, ab: d.T[fi][j], ba: d.T[j][fi], I: n3imb(d.T[fi][j], d.T[j][fi]) }))
+      .filter(r => r.j !== fi && !(isNaN(r.ab) && isNaN(r.ba))).sort((a, b) => (Math.abs(b.I) || 0) - (Math.abs(a.I) || 0));
+    const me = nodeName(d.ids[fi]);
+    h += `<h3>${esc(me)}: most lopsided connections</h3><table><tr><th>Place</th><th>Out</th><th>Back</th><th>Now</th>${cv && cv.done ? '<th>Average</th>' : ''}</tr>` +
+      rows.slice(0, 8).map(r => {
+        const avg = cv && cv.done ? cv.pair[n3key(d.ids[fi], r.id)] : null;
+        return `<tr><td>${esc(nodeName(r.id))}</td><td>${n3fmt(r.ab)}</td><td>${n3fmt(r.ba)}</td><td>${isNaN(r.I) ? '–' : (r.I > 0 ? '+' : '') + (100 * r.I).toFixed(0) + '%'}</td>${cv && cv.done ? `<td>${avg && avg.n ? (avg.s / avg.n > 0 ? '+' : '') + (100 * avg.s / avg.n).toFixed(0) + '%' : '–'}</td>` : ''}</tr>`;
+      }).join('') + `</table><p class="caveat">Imbalance = (out − back) / (out + back): positive means getting out takes longer than coming back. ${cv && cv.done ? 'Average: the same over every six months from ' + isoOf(jdOfK(cv.k[0])).slice(0, 4) + ' to ' + isoOf(jdOfK(cv.k[cv.k.length - 1])).slice(0, 4) + '. What survives the average is structural; the rest is the timing of launch windows.' : ''} Double-click ${esc(me)} for the view centred on it.</p>`;
+  } else h += `<p class="caveat">Click a place to see its most lopsided connections; hover over a line for both directions. Arrowheads point in the quicker direction where the two differ by 10% or more.</p>`;
+  $('n3card').innerHTML = h;
+}
+const n3key = (a, b) => a + '>' + b;
+function n3curve() {                                      // network imbalance and per-pair averages every 180 days
+  const key = [state.jMode, state.jB, state.jYears, state.jStations].join('|');
+  if (N3.curveKey === key) return;
+  N3.curveKey = key; const step = Math.round(180 / NET.meta.step_days), last = NET.meta.n - 1 - Math.round(state.jYears * 365.25 / NET.meta.step_days);
+  const cv = N3.curve = { A: [], k: [], pair: {}, done: false }; let k = 0;
+  const work = () => {
+    if (N3.curveKey !== key || !state.net3d) return;
+    if (k > last) { cv.done = true; if (N3.data) n3card(); return; }
+    const M = n3matrix(k); cv.A.push(n3asym(M.T)); cv.k.push(k);
+    M.ids.forEach((a, i) => M.ids.forEach((b, j) => { if (i === j) return; const I = n3imb(M.T[i][j], M.T[j][i]); if (isNaN(I)) return;
+      const p = cv.pair[n3key(a, b)] || (cv.pair[n3key(a, b)] = { s: 0, n: 0 }); p.s += I; p.n++; }));
+    k += step; if (N3.data && cv.k.length % 4 === 0) n3card(); setTimeout(work, 0);
+  };
+  setTimeout(work, 0);
+}
+function drawNet3d() {
+  N3.el.style.display = state.net3d ? 'block' : 'none';
+  if (!state.net3d) return;
+  n3resize(); n3compute(); n3draw(); n3curve();
+}
+function n3resize() {                                    // centre the picture between the info card and the panel
+  const w = innerWidth, h = innerHeight, wide = w > 760, pw = wide ? ($('panel').offsetWidth || 0) + 12 : 0, cw = wide ? $('n3card').offsetWidth + 16 : 0;
+  n3renderer.setSize(w, h, false); N3.canvas.style.width = w + 'px'; N3.canvas.style.height = h + 'px';
+  n3camera.aspect = w / h; n3camera.setViewOffset(w, h, (pw - cw) / 2, 0, w, h); n3camera.updateProjectionMatrix();
+}
+function n3frame() {
+  if (state.net3d) {
+    n3controls.update(); n3renderer.render(n3scene, n3camera);
+    if (N3.data && N3.P) { const w = innerWidth, h = innerHeight;
+      N3.data.ids.forEach((id, i) => { const l = N3.labels[id]; const v = N3.P[i].clone().project(n3camera);
+        if (v.z > 1) { l.hidden = true; return; } l.hidden = false; l.style.left = ((v.x + 1) / 2 * w) + 'px'; l.style.top = ((1 - v.y) / 2 * h) + 'px'; }); }
+  }
+  requestAnimationFrame(n3frame);
+}
+const n3ray = new THREE.Raycaster(); n3ray.params.Line.threshold = 0.12;
+function n3pick(ev) {
+  const r = N3.canvas.getBoundingClientRect(), m = new THREE.Vector2((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
+  n3ray.setFromCamera(m, n3camera);
+  const hn = n3ray.intersectObjects(n3nodes.children)[0]; if (hn) return { node: hn.object.userData.id };
+  const he = N3.lines && n3ray.intersectObject(N3.lines)[0]; if (he) return { pair: N3.pairs[Math.floor(he.index / 2)] };
+  return null;
+}
+N3.canvas.addEventListener('mousemove', ev => {
+  const t = $('n3tip'), p = state.net3d && N3.data && n3pick(ev); if (!p) { t.hidden = true; return; }
+  const d = N3.data; let h;
+  if (p.node) h = `<strong>${esc(nodeName(p.node))}</strong><br>click to focus, double-click for the view centred on it`;
+  else { const [i, j] = p.pair, a = nodeName(d.ids[i]), b = nodeName(d.ids[j]), I = n3imb(d.T[i][j], d.T[j][i]);
+    h = `<strong>${esc(a)} → ${esc(b)}</strong> ${n3fmt(d.T[i][j])}${isNaN(d.C[i][j]) ? '' : ', ' + d.C[i][j].toFixed(1) + ' km/s'}<br><strong>${esc(b)} → ${esc(a)}</strong> ${n3fmt(d.T[j][i])}${isNaN(d.C[j][i]) ? '' : ', ' + d.C[j][i].toFixed(1) + ' km/s'}<br>imbalance ${isNaN(I) ? '–' : (I > 0 ? '+' : '') + (100 * I).toFixed(0) + '%'}`; }
+  t.innerHTML = h; t.hidden = false; t.style.left = Math.min(ev.clientX + 14, innerWidth - 280) + 'px'; t.style.top = (ev.clientY + 14) + 'px';
+});
+N3.canvas.addEventListener('click', ev => { const p = n3pick(ev); state.n3Focus = p && p.node ? (state.n3Focus === p.node ? null : p.node) : null;
+  if (state.n3Focus) { const i = N3.data.ids.indexOf(state.n3Focus); n3controls.target.copy(N3.P[i]); } else n3controls.target.set(0, 0, 0);
+  n3draw(); });
+N3.canvas.addEventListener('dblclick', ev => { const p = n3pick(ev); if (!p || !p.node) return;
+  state.jFrom = p.node; state.net3d = false; $('btnNet3').setAttribute('aria-pressed', false); $('n3ctl').hidden = true; drawNet3d();
+  if (!state.netView) $('btnNet').click(); else drawNetView(); renderPanel(); });
+$('btnNet3').addEventListener('click', () => {
+  state.net3d = !state.net3d; $('btnNet3').setAttribute('aria-pressed', state.net3d); $('n3ctl').hidden = !state.net3d;
+  if (state.net3d && state.netView) $('btnNet').click();
+  if (state.net3d && !state.journey) { state.journey = true; state.jTab = 'journey'; $('btnJourney').setAttribute('aria-pressed', true); state.sel = null; renderPanel(); }
+  state.n3K = kOf(state.jd); drawNet3d();
+});
+$('n3Color').addEventListener('change', e => { state.n3Color = e.target.value; if (state.net3d) n3draw(); });
+$('n3Scale').addEventListener('change', e => { state.n3Scale = e.target.value; N3.coords = null; if (state.net3d) drawNet3d(); });
+addEventListener('resize', () => { if (state.net3d) n3resize(); });
+requestAnimationFrame(n3frame);
+
 // open with the travel network visible: routes from Earth
 state.routeFrom = 'earth'; $('routeFrom').value = 'earth';
 resize(); refreshGlyphs(); setJD(jdOf(TODAY)); renderPanel(); requestAnimationFrame(frame);
