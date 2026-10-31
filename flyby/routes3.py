@@ -3,7 +3,7 @@
 #    Tisserand-style energy screen puts them within SCREEN km/s of the direct route, plus the hand-made lists of runs 1-2
 #  - small bodies on perturbed JPL Horizons orbits (bodies.py), planets on DE440
 #  - leg flight times up to 2.5 Hohmann times (was 1.9)
-#  - three independent starts per problem; the spread between them is stored
+#  - three independent starts per problem, six for two-flyby sequences (see convergence.py); the spread is stored
 #  - arrival excess speed stored for every route; arrivals at Earth and Mars in two variants: propulsive capture into the
 #    parking orbit, and aerocapture (assumed limits below)
 #  - the full decision vector stored, so the pages can draw the optimiser's own trajectory
@@ -166,7 +166,9 @@ def main():
             for seq in seqs:
                 for arrival in (['capture', 'aero'] if tgt in AERO else ['capture']):
                     t = time.time()
-                    runs = [solve(seq, t0, arrival, seed=y * 100 + k, **budget) for k in range(starts)]
+                    # convergence check (flyby/convergence.log): two-flyby sequences need twice the starts
+                    n = starts * (2 if len(seq) > 3 else 1)
+                    runs = [solve(seq, t0, arrival, seed=y * 100 + k, **budget) for k in range(n)]
                     r = min(runs, key=lambda s: s['dv'])
                     r.update(origin=origin, target=tgt, bin=f'{y}-{y + width - 1}', feasible=bool(r['dv'] < OUT_OF_RANGE),
                              starts_dv=[s['dv'] for s in runs], seconds=round(time.time() - t, 1))
