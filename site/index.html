@@ -1,5 +1,5 @@
 <title>Deep Space Strategy</title>
-<meta name="description" content="Deep Space Strategy studies where humanity should build in the solar system, and in which order.">
+<meta name="description" content="Deep Space Strategy studies how to establish the frontier in space and make space work.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
@@ -7,30 +7,35 @@
 <style>
 .hero{display:flex;flex-direction:column;gap:14px;padding:28px 0 6px}
 .hero h1{font-size:60px}
-.hero .lede{font-size:23px;color:var(--ink);max-width:32ch;line-height:1.35}
+.hero .lede{font-size:23px;color:var(--ink);max-width:34ch;line-height:1.35}
+.questions{margin:6px 0 0;padding-left:20px}
+.questions li{font-size:16.5px;margin:8px 0}
 .area{display:grid;grid-template-columns:190px 1fr;gap:4px 18px;padding:12px 0;border-top:1px solid var(--rule)}
 .area h3{font-family:var(--f-display);font-size:21px;letter-spacing:.04em;text-transform:uppercase;color:var(--sun);margin:0}
 .area p{font-size:15.5px}
 .area .links{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14.5px;margin-top:4px}
-.area .soon{color:var(--dim);font-size:14px;margin-top:4px}
+.area .status{color:var(--dim);font-size:14px;margin-top:4px}
 @media (max-width:560px){.area{grid-template-columns:1fr}.hero h1{font-size:44px}.hero .lede{font-size:20px}}
 </style>
 <main>
   <div class="hero">
     <h1>Deep Space Strategy</h1>
-    <p class="lede">We study where humanity should build in the solar system, and in which order.</p>
-    <p>Deep Space Strategy is a primer for settling the solar system, based on evidence.</p>
+    <p class="lede">We want to understand how to establish the frontier in space and make space work.</p>
+    <p>Science fiction has sparked many visions of how humanity could settle space, from mining colonies in the asteroid belt to cities on Mars. Reality has moved more slowly. Nobody has walked on the Moon since December 1972, almost 54 years ago. Every mission beyond Earth orbit still runs on government money.</p>
   </div>
 
-  <h2>Contents</h2>
-  <div class="area"><h3>Settlement</h3><div><p>Where the first bases and stations should go, and what comes after them.</p><p class="links"><a href="https://bhanneke.github.io/solmaps/station-siting.html">Station siting</a><a href="https://bhanneke.github.io/solmaps/growth-map.html">Growth map</a></p></div></div>
-  <div class="area"><h3>Resources and energy</h3><div><p>Where water and metals are. Which energy sources each step needs, from solar power to fusion.</p><p class="links"><a href="https://bhanneke.github.io/solmaps/atlas.html">Resource atlas</a></p></div></div>
-  <div class="area"><h3>Transport</h3><div><p>How ships travel between the planets, and where they refuel.</p><p class="links"><a href="https://bhanneke.github.io/solmaps/solar-system-3d.html">3D atlas</a><a href="https://bhanneke.github.io/solmaps/growth-map.html">Growth map</a></p></div></div>
-  <div class="area"><h3>Economics</h3><div><p>Which goods are worth more where they arrive than they cost to deliver. What fleets cost, and how ventures raise capital and insure it.</p><p class="soon">In preparation</p></div></div>
-  <div class="area"><h3>Machines and AI</h3><div><p>What autonomous systems build before people arrive.</p><p class="soon">In preparation</p></div></div>
-  <div class="area"><h3>Cooperation and law</h3><div><p>Shared infrastructure and the rules for using it.</p><p class="soon">In preparation</p></div></div>
-  <div class="area"><h3>Competition and conflict</h3><div><p>Competition between states and companies, and how to prevent armed conflict.</p><p class="soon">In preparation</p></div></div>
-  <div class="area"><h3>Simulation</h3><div><p>Computer simulations in which many actors pursue different strategies.</p><p class="soon">In preparation</p></div></div>
+  <h2>Open questions</h2>
+  <ul class="questions">
+    <li>Do people need to settle space themselves, now that autonomous machines could take on the heavy work?</li>
+    <li>Which economic forces shape the frontier, and what would make private investment in it pay?</li>
+    <li>Where should the first infrastructure go, and in which order?</li>
+    <li>Which rules for shared infrastructure let the frontier grow, and how can competition stay peaceful?</li>
+  </ul>
+
+  <h2>How we work</h2>
+  <div class="area"><h3>Map</h3><div><p>solmaps, our open engine, computes what it costs to move mass between any two places in the solar system on any day until 2100, and maps where water and metals are.</p><p class="links"><a href="https://bhanneke.github.io/solmaps/atlas.html">Resource atlas</a><a href="https://bhanneke.github.io/solmaps/solar-system-3d.html">3D atlas</a><a href="https://bhanneke.github.io/solmaps/growth-map.html">Growth map</a><a href="https://bhanneke.github.io/solmaps/station-siting.html">Station siting</a></p><p class="status">Available</p></div></div>
+  <div class="area"><h3>Economics</h3><div><p>We work out which steps pay for themselves, how investors can finance them and how the participants share the gains, with and without people on site.</p><p class="status">In progress</p></div></div>
+  <div class="area"><h3>Strategy</h3><div><p>From the map and the economics we derive where to build first and in which order. We also study which rules suit shared infrastructure and how competition can stay peaceful, and test these strategies in simulations with many actors. The results form a primer for settling the solar system, based on evidence.</p><p class="status">Planned</p></div></div>
 
   <h2>Method</h2>
   <p>The maps and route tools run on <a href="https://bhanneke.github.io/solmaps/">solmaps</a>, our open-source engine. <a href="https://bhanneke.github.io/solmaps/how-it-works.html">How solmaps works</a> gives an overview; the <a href="https://bhanneke.github.io/solmaps/technical.html">technical documentation</a> gives the formulas and references.</p>
