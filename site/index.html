@@ -9,10 +9,26 @@
 .hero h1{font-size:60px}
 .hero p{font-size:17.5px;max-width:62ch;line-height:1.55}
 .hero p.goal{font-size:20px;color:var(--ink);font-weight:500}
-.maps{display:grid;grid-template-columns:190px 1fr;gap:4px 18px;padding:12px 0;border-top:1px solid var(--rule)}
-.maps h3{font-family:var(--f-display);font-size:21px;letter-spacing:.04em;text-transform:uppercase;color:var(--sun);margin:0}
-.maps p{font-size:15.5px}
-@media (max-width:560px){.maps{grid-template-columns:1fr}.hero h1{font-size:44px}}
+.rmap{display:flex;flex-direction:column;gap:12px}
+.rmap .intro{color:var(--dim);font-size:15px}
+.rhead,.rrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}
+.rhead span{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.node{position:relative;min-width:0;display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid var(--rule);border-radius:6px;background:var(--deck);font-size:14px;line-height:1.45}
+.node+.node::before{content:"\2192";position:absolute;left:-17px;top:50%;transform:translateY(-50%);color:var(--dim)}
+.node.planned{background:transparent;border-style:dashed;color:var(--dim)}
+.node .name{font-weight:500;color:var(--ink)}
+.node.planned .name{color:var(--dim)}
+.node .links{display:flex;flex-wrap:wrap;gap:2px 10px}
+.node .st{font-family:var(--f-mono);font-size:11.5px;color:var(--dim)}
+.node .st.on{color:var(--sun)}
+.node .col{display:none}
+@media (max-width:700px){
+  .rhead{display:none}
+  .rrow{grid-template-columns:1fr;gap:20px;padding-bottom:14px;border-bottom:1px solid var(--rule)}
+  .node+.node::before{content:"\2193";left:50%;top:-17px;transform:translateX(-50%)}
+  .node .col{display:block;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+}
+@media (max-width:560px){.hero h1{font-size:44px}}
 </style>
 <main>
   <div class="hero">
@@ -23,11 +39,46 @@
     <p class="goal">The long-term goal is a primer for expanding the human frontier into the solar system.</p>
   </div>
 
-  <h2>Maps</h2>
-  <div class="maps"><h3>Resource atlas</h3><div><p><a href="https://bhanneke.github.io/solmaps/atlas.html">Where water and metals are, with the evidence for each entry.</a></p></div></div>
-  <div class="maps"><h3>3D atlas</h3><div><p><a href="https://bhanneke.github.io/solmaps/solar-system-3d.html">How ships travel between the planets and where they refuel, with the whole transfer network in 3D.</a></p></div></div>
-  <div class="maps"><h3>Growth map</h3><div><p><a href="https://bhanneke.github.io/solmaps/growth-map.html">Transfer costs over time, and which propellant hubs save the most.</a></p></div></div>
-  <div class="maps"><h3>Station siting</h3><div><p><a href="https://bhanneke.github.io/solmaps/station-siting.html">Where the first stations should go, ranked by the objective you choose.</a></p></div></div>
+  <h2>Research map</h2>
+  <div class="rmap">
+    <p class="intro">Each row runs from data to strategy: what we measure, which parameters follow from it, which investment cases they decide, and what that means for strategy.</p>
+    <div class="rhead" aria-hidden="true"><span>Data</span><span>Parameters</span><span>Economics</span><span>Strategy</span></div>
+
+    <div class="rrow">
+      <div class="node"><span class="col">Data</span><span class="name">Resource atlas</span><span class="links"><a href="https://bhanneke.github.io/solmaps/atlas.html">Open the atlas</a></span><span class="st on">available</span></div>
+      <div class="node planned"><span class="col">Parameters</span><span class="name">Deposit quality, evidence grade, mining difficulty (gravity well)</span><span class="st">planned</span></div>
+      <div class="node planned"><span class="col">Economics</span><span class="name">Value of a good at each place, extraction cost, site case</span><span class="st">in progress</span></div>
+      <div class="node planned"><span class="col">Strategy</span><span class="name">Where to build first</span><span class="st">planned</span></div>
+    </div>
+
+    <div class="rrow">
+      <div class="node"><span class="col">Data</span><span class="name">Transfer network</span><span class="links"><a href="https://bhanneke.github.io/solmaps/solar-system-3d.html">3D atlas</a><a href="https://bhanneke.github.io/solmaps/growth-map.html">Growth map</a></span><span class="st on">available</span></div>
+      <div class="node"><span class="col">Parameters</span><span class="name">Δv, flight time, launch windows, cost per kg delivered</span><span class="links"><a href="https://bhanneke.github.io/solmaps/technical.html">How solmaps computes them</a></span><span class="st on">available</span></div>
+      <div class="node planned"><span class="col">Economics</span><span class="name">Delivered cost per kg, fleet and depot cases</span><span class="st">in progress</span></div>
+      <div class="node planned"><span class="col">Strategy</span><span class="name">Hubs and chokepoints, build order</span><span class="st">planned</span></div>
+    </div>
+
+    <div class="rrow">
+      <div class="node"><span class="col">Data</span><span class="name">Station siting</span><span class="links"><a href="https://bhanneke.github.io/solmaps/station-siting.html">Open station siting</a></span><span class="st on">available</span></div>
+      <div class="node"><span class="col">Parameters</span><span class="name">Fuel saved, reach of a station</span><span class="links"><a href="https://bhanneke.github.io/solmaps/station-siting.html">On the siting page</a></span><span class="st on">available</span></div>
+      <div class="node planned"><span class="col">Economics</span><span class="name">Depot business case</span><span class="st">in progress</span></div>
+      <div class="node planned"><span class="col">Strategy</span><span class="name">Which stations first</span><span class="st">planned</span></div>
+    </div>
+
+    <div class="rrow">
+      <div class="node planned"><span class="col">Data</span><span class="name">Machines and autonomy</span><span class="st">planned</span></div>
+      <div class="node planned"><span class="col">Parameters</span><span class="name">Replication and failure rates, closure, light-lag</span><span class="st">planned</span></div>
+      <div class="node planned"><span class="col">Economics</span><span class="name">Machine-first case, capture window</span><span class="st">in progress</span></div>
+      <div class="node planned"><span class="col">Strategy</span><span class="name">Sequence of settlement</span><span class="st">planned</span></div>
+    </div>
+
+    <div class="rrow">
+      <div class="node planned"><span class="col">Data</span><span class="name">Law and actors</span><span class="st">planned</span></div>
+      <div class="node planned"><span class="col">Parameters</span><span class="name">Title, enforceability, capture</span><span class="st">planned</span></div>
+      <div class="node planned"><span class="col">Economics</span><span class="name">Financing, who keeps the gains</span><span class="st">in progress</span></div>
+      <div class="node planned"><span class="col">Strategy</span><span class="name">Rules for shared infrastructure, peaceful competition</span><span class="st">planned</span></div>
+    </div>
+  </div>
 
   <h2>Method</h2>
   <p>The maps and route tools run on <a href="https://bhanneke.github.io/solmaps/">solmaps</a>, our open-source engine. <a href="https://bhanneke.github.io/solmaps/how-it-works.html">How solmaps works</a> gives an overview; the <a href="https://bhanneke.github.io/solmaps/technical.html">technical documentation</a> gives the formulas and references.</p>
