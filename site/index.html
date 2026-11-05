@@ -5,7 +5,16 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
 <link rel="stylesheet" href="page.css">
 <style>
-.hero{display:flex;flex-direction:column;gap:14px;padding:28px 0 6px}
+main{max-width:1040px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start;padding:28px 0 6px}
+.hero .text{display:flex;flex-direction:column;gap:14px;min-width:0}
+.hero figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+#routes{display:block;width:100%;height:auto;aspect-ratio:1}
+.counter{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+.counter b{font-family:var(--f-display);font-weight:700;font-size:44px;line-height:1;color:var(--sun);font-variant-numeric:tabular-nums}
+.counter span{font-size:15px}
+.hero figcaption{font-size:13.5px;color:var(--dim);line-height:1.45}
+@media (max-width:800px){.hero{grid-template-columns:minmax(0,1fr)}}
 .hero h1{font-size:60px}
 .hero p{font-size:17.5px;max-width:62ch;line-height:1.55}
 .hero p.goal{font-size:20px;color:var(--ink);font-weight:500}
@@ -32,11 +41,18 @@
 </style>
 <main>
   <div class="hero">
+    <div class="text">
     <h1>Deep Space Strategy</h1>
     <p>Humans have imagined settlements across the solar system for more than a century. Yet human activity in space remains concentrated around Earth. Nobody has walked on the Moon since December 1972, and most missions farther away still depend on government budgets.</p>
     <p>However, conditions are changing. Reusable rockets have reduced the cost of reaching orbit, while autonomous systems can operate farther from Earth and for longer periods. Together, these developments make sustained activity beyond Earth increasingly conceivable.</p>
     <p>Deep Space Strategy studies how that activity could expand across the solar system. What can be reached depends on the physics of moving mass and the resources available along the way. What can endure also depends on costs, investment, infrastructure and the value created beyond Earth. Over time, these constraints and opportunities shape where activity can develop and how the next steps become possible.</p>
     <p class="goal">The long-term goal is a primer for expanding the human frontier into the solar system.</p>
+    </div>
+    <figure>
+      <canvas id="routes" aria-label="The sun and 30 bodies on their orbits, with lines for the routes between them; bright lines mark the routes computed so far"></canvas>
+      <div class="counter"><b id="routes-done">116</b><span>of 870 routes computed, each for every day from 2026 to 2100. <a href="https://bhanneke.github.io/solmaps/status.html">Status</a></span></div>
+      <figcaption>Schematic: orbits on a logarithmic distance scale, with the sun at the centre. The computation is still running.</figcaption>
+    </figure>
   </div>
 
   <h2>Research map</h2>
@@ -87,3 +103,66 @@
   <h2>About</h2>
   <p>Björn Hanneke, information systems researcher at Goethe University Frankfurt, leads Deep Space Strategy. You can send questions and corrections through the <a href="https://github.com/bhanneke/deep-space-strategy/issues">GitHub repository</a>. The code is open under MIT, the data and texts under CC BY 4.0.</p>
 </main>
+<script>
+(() => {
+  const BODIES = [{"id": "earth", "a": 1.0, "label": "Earth"}, {"id": "venus", "a": 0.723, "label": ""}, {"id": "mercury", "a": 0.387, "label": ""}, {"id": "mars", "a": 1.524, "label": "Mars"}, {"id": "ceres", "a": 2.77, "label": ""}, {"id": "vesta", "a": 2.36, "label": ""}, {"id": "psyche", "a": 2.93, "label": ""}, {"id": "433", "a": 1.46, "label": ""}, {"id": "101955", "a": 1.13, "label": ""}, {"id": "162173", "a": 1.19, "label": ""}, {"id": "jupiter", "a": 5.203, "label": "Jupiter"}, {"id": "saturn", "a": 9.537, "label": "Saturn"}, {"id": "uranus", "a": 19.189, "label": "Uranus"}, {"id": "neptune", "a": 30.07, "label": "Neptune"}, {"id": "pluto", "a": 39.589, "label": "Pluto"}, {"id": "2", "a": 2.77, "label": ""}, {"id": "10", "a": 3.15, "label": ""}, {"id": "24", "a": 3.14, "label": ""}, {"id": "3", "a": 2.67, "label": ""}, {"id": "99942", "a": 0.922, "label": ""}, {"id": "65803", "a": 1.64, "label": ""}, {"id": "25143", "a": 1.32, "label": ""}, {"id": "341843", "a": 0.96, "label": ""}, {"id": "175706", "a": 1.05, "label": ""}, {"id": "4660", "a": 1.49, "label": ""}, {"id": "3548", "a": 5.22, "label": ""}, {"id": "15094", "a": 5.19, "label": ""}, {"id": "11351", "a": 5.31, "label": ""}, {"id": "21900", "a": 5.12, "label": ""}, {"id": "617", "a": 5.21, "label": ""}], ROUTES_PER_BODY = BODIES.length - 1;
+  let done = new Set(["earth", "mars", "mercury", "venus"]);
+  const cv = document.getElementById('routes'), ctx = cv.getContext('2d'), out = document.getElementById('routes-done');
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const SUN = css('--sun'), LINE = css('--link'), DIM = css('--dim'), RULE = css('--rule'), INK = css('--ink');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lmin = Math.log(0.3), lmax = Math.log(45);
+  let S = 0, R = 0;
+  BODIES.forEach((b, i) => {
+    b.a0 = i * 2.399963;                                    // even spread (schematic positions)
+    b.w = 2 * Math.PI / (12 * Math.pow(b.a, 0.75));        // inner bodies faster; slowed for display
+    b.rho = 0.12 + 0.88 * (Math.log(b.a) - lmin) / (lmax - lmin);
+  });
+  function size() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    S = cv.clientWidth; R = S / 2 - 8;
+    cv.width = S * dpr; cv.height = S * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  const xy = (b, t) => { const a = b.a0 - b.w * t, r = b.rho * R; return [S / 2 + r * Math.cos(a), S / 2 + r * Math.sin(a)]; };
+  function draw(t) {
+    ctx.clearRect(0, 0, S, S);
+    const P = BODIES.map(b => xy(b, t));
+    ctx.strokeStyle = RULE; ctx.lineWidth = 1; ctx.globalAlpha = 0.55;
+    const seen = new Set();
+    for (const b of BODIES) if (!seen.has(b.rho)) { seen.add(b.rho); ctx.beginPath(); ctx.arc(S / 2, S / 2, b.rho * R, 0, 7); ctx.stroke(); }
+    for (let pass = 0; pass < 2; pass++) {
+      ctx.strokeStyle = pass ? LINE : DIM; ctx.globalAlpha = pass ? 0.5 : 0.05; ctx.lineWidth = pass ? 0.9 : 0.6;
+      ctx.beginPath();
+      BODIES.forEach((a, i) => BODIES.forEach((b, j) => {
+        if (j <= i) return;
+        const lit = done.has(a.id) || done.has(b.id);
+        if (lit !== !!pass) return;
+        const [x0, y0] = P[i], [x1, y1] = P[j];
+        ctx.moveTo(x0, y0); ctx.quadraticCurveTo((x0 + x1) / 2 * 0.8 + S / 2 * 0.2, (y0 + y1) / 2 * 0.8 + S / 2 * 0.2, x1, y1);
+      }));
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(S / 2, S / 2, Math.max(4, R * 0.022), 0, 7); ctx.fill();
+    ctx.font = '11px "IBM Plex Mono",ui-monospace,monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    BODIES.forEach((b, i) => {
+      ctx.fillStyle = done.has(b.id) ? SUN : INK;
+      ctx.beginPath(); ctx.arc(P[i][0], P[i][1], b.label ? 3 : 1.8, 0, 7); ctx.fill();
+      if (b.label) {
+        const right = P[i][0] > S * 0.78;                  // keep labels near the right edge inside the figure
+        ctx.fillStyle = INK; ctx.textAlign = right ? 'right' : 'left';
+        ctx.fillText(b.label, P[i][0] + (right ? -6 : 6), P[i][1]);
+      }
+    });
+  }
+  size(); addEventListener('resize', () => { size(); draw(0); });
+  if (still) draw(0); else { const loop = now => { draw(now / 1000); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+  // the counter reads the same feed as the status page; the value above stays if the feed cannot be reached
+  fetch('https://bhanneke.github.io/solmaps/progress.json').then(r => r.json()).then(j => {
+    done = new Set(j.transfers.done.filter(id => BODIES.some(b => b.id === id)));
+    out.textContent = String(done.size * ROUTES_PER_BODY);
+    if (still) draw(0);
+  }).catch(() => {});
+})();
+</script>
+
