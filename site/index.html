@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="page.css">
 <style>
 main{max-width:1040px}
-.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start;padding:28px 0 6px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start;padding:6px 0}
 .hero .text{display:flex;flex-direction:column;gap:14px;min-width:0}
 .hero figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
 .orrery{position:relative;width:100%;aspect-ratio:1;overflow:hidden}
@@ -15,14 +15,13 @@ main{max-width:1040px}
 .nav{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14.5px;justify-content:flex-end}
 .nav a{color:var(--dim);text-decoration:none}
 .nav a:hover,.nav a[aria-current]{color:var(--ink)}
-.orrery .date{left:10px;top:8px;transform:none;color:var(--dim);font-size:12.5px;font-variant-numeric:tabular-nums}
 .orrery span{position:absolute;left:0;top:0;font-family:var(--f-mono);font-size:11px;color:var(--ink);pointer-events:none;white-space:nowrap;text-shadow:0 0 4px var(--void)}
 .counter{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
 .counter b{font-family:var(--f-display);font-weight:700;font-size:44px;line-height:1;color:var(--sun);font-variant-numeric:tabular-nums}
 .counter span{font-size:15px}
 .hero figcaption{font-size:13.5px;color:var(--dim);line-height:1.45}
 @media (max-width:800px){.hero{grid-template-columns:minmax(0,1fr)}}
-.hero h1{font-size:60px}
+h1.title{font-size:clamp(30px,8.2vw,64px);white-space:nowrap;margin:8px 0 0}
 .hero p{font-size:17.5px;max-width:62ch;line-height:1.55}
 .hero p.goal{font-size:20px;color:var(--ink);font-weight:500}
 .rmap{display:flex;flex-direction:column;gap:12px}
@@ -44,13 +43,12 @@ main{max-width:1040px}
   .node+.node::before{content:"\2193";left:50%;top:-17px;transform:translateX(-50%)}
   .node .col{display:block;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 }
-@media (max-width:560px){.hero h1{font-size:44px}}
 </style>
 <main>
   <nav class="nav"><a href="index.html" aria-current="page">Home</a><a href="library.html">Library</a><a href="https://bhanneke.github.io/solmaps/">Maps</a><a href="https://github.com/bhanneke/deep-space-strategy">GitHub</a></nav>
+  <h1 class="title">Deep Space Strategy</h1>
   <div class="hero">
     <div class="text">
-    <h1>Deep Space Strategy</h1>
     <p>Humans have imagined settlements across the solar system for more than a century. Yet human activity in space remains concentrated around Earth. Nobody has walked on the Moon since December 1972, and most missions farther away still depend on government budgets.</p>
     <p>However, conditions are changing. Reusable rockets have reduced the cost of reaching orbit, while autonomous systems can operate farther from Earth and for longer periods. Together, these developments make sustained activity beyond Earth increasingly conceivable.</p>
     <p>Deep Space Strategy studies how that activity could expand across the solar system. What can be reached depends on the physics of moving mass and the resources available along the way. What can endure also depends on costs, investment, infrastructure and the value created beyond Earth. Over time, these constraints and opportunities shape where activity can develop and how the next steps become possible.</p>
@@ -59,7 +57,7 @@ main{max-width:1040px}
     <figure>
       <div class="orrery" id="orrery"><canvas id="routes" aria-label="A 3D view of the sun and 30 bodies on their orbits, real orbits and asteroid populations, with arcs for the routes between them; bright arcs mark the routes computed so far. Drag to turn it."></canvas></div>
       <div class="counter"><b id="routes-done">116</b><span>of 870 routes computed, each for every day from 2026 to 2100. <a href="https://bhanneke.github.io/solmaps/status.html">Status</a> · <a href="library.html">Library: 1,029 tagged items</a></span></div>
-      <figcaption>Real orbits and positions from JPL: the planets, 22 other bodies and 3,750 numbered asteroids and Kuiper belt objects. One year passes in about 10 seconds. Distances are on a logarithmic scale, body sizes enlarged, route arcs schematic.</figcaption>
+      <figcaption>Real orbits and positions from JPL: the planets, 22 other bodies and about 1,400 numbered asteroids and Kuiper belt objects. One year passes in about 10 seconds. Distances are on a logarithmic scale, body sizes enlarged, route arcs schematic.</figcaption>
     </figure>
   </div>
 
@@ -151,7 +149,7 @@ main{max-width:1040px}
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 800);
-  camera.position.set(0, 13, 31);
+  camera.position.set(0, 14, 35);
   const controls = new THREE.OrbitControls(camera, cv);
   controls.enableZoom = false; controls.enablePan = false; controls.enableDamping = true;
   controls.autoRotate = !still; controls.autoRotateSpeed = 0.3;
@@ -188,14 +186,13 @@ main{max-width:1040px}
     }
     if (NAMES.includes(b.id)) { b.lab = document.createElement('span'); b.lab.textContent = b.name; box.appendChild(b.lab); }
   }
-  const dateEl = document.createElement('span'); dateEl.className = 'date'; box.appendChild(dateEl);
 
   // real small-body populations as points
-  const POP = {'main belt': [0xb7c2d6, 0.55], 'Jupiter Trojans': [0xf0b347, 0.7], 'near-Earth': [0x7fd3e6, 0.7], 'Kuiper belt': [0x8fa6c9, 0.6]};
+  const POP = {'main belt': [0xb7c2d6, 0.38, 3], 'Jupiter Trojans': [0xf0b347, 0.55, 2], 'near-Earth': [0x7fd3e6, 0.55, 2], 'Kuiper belt': [0x8fa6c9, 0.45, 2]};
   const clouds = Object.entries(D.populations).map(([k, rows]) => {
-    rows = rows.filter(r => r[0] < 55 && r[1] < 0.95);
+    rows = rows.filter((r, i) => r[0] < 55 && r[1] < 0.95 && i % POP[k][2] === 0);
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(rows.length * 3), 3));
-    scene.add(new THREE.Points(g, new THREE.PointsMaterial({color: POP[k][0], size: 1.5, sizeAttenuation: false, transparent: true, opacity: POP[k][1], depthWrite: false})));
+    scene.add(new THREE.Points(g, new THREE.PointsMaterial({color: POP[k][0], size: 1.2, sizeAttenuation: false, transparent: true, opacity: POP[k][1], depthWrite: false})));
     return {rows, g};
   });
   function moveClouds(jd) {
@@ -253,7 +250,6 @@ main{max-width:1040px}
   function frame(jd) {
     moveBodies(jd);
     if (count++ % 3 === 0) moveClouds(jd);
-    dateEl.textContent = new Date((jd - 2440587.5) * 86400000).toISOString().slice(0, 7);
     controls.update(); renderer.render(scene, camera); labels();
   }
   size(); addEventListener('resize', () => { size(); if (still) frame(JD_NOW); });
