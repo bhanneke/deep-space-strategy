@@ -1,0 +1,128 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>
+<title>Library · Deep Space Strategy</title>
+<meta name="description" content="The tagged library behind Deep Space Strategy: places, resources, routes and computations, each with its source and what it rests on.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="page.css">
+<style>
+main{max-width:1040px}
+.nav{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14.5px;align-items:baseline}
+.nav .brand{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);text-decoration:none;margin-right:auto}
+.nav a:not(.brand){color:var(--dim);text-decoration:none}
+.nav a:hover{color:var(--ink)}
+.nav a[aria-current]{color:var(--ink)}
+.tools-row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+#q{flex:1 1 240px;min-width:0;background:var(--deck);border:1px solid var(--rule);border-radius:4px;color:var(--ink);font:inherit;font-size:15px;padding:7px 10px}
+#q:focus-visible,.chip:focus-visible,.row:focus-visible,.tagbtn:focus-visible{outline:2px solid var(--link);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;background:transparent;border:1px solid var(--rule);border-radius:999px;color:var(--dim);padding:3px 11px;cursor:pointer}
+.chip[aria-pressed=true]{border-color:var(--sun);color:var(--ink)}
+.lib{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:22px;align-items:start}
+.list{display:flex;flex-direction:column;max-height:70vh;overflow-y:auto;border:1px solid var(--rule);border-radius:6px}
+.row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:0 8px;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--rule);color:var(--ink);font:inherit;font-size:14px;padding:7px 10px;cursor:pointer}
+.row:hover{background:var(--deck)}
+.row[aria-current=true]{background:var(--deck);box-shadow:inset 2px 0 0 var(--sun)}
+.tag{font-family:var(--f-mono);font-size:12.5px;color:var(--sun)}
+.row small{grid-column:2;color:var(--dim);font-size:12.5px}
+.more{padding:8px 10px;color:var(--dim);font-size:13px}
+.detail{display:flex;flex-direction:column;gap:12px;padding:16px 18px;border:1px solid var(--rule);border-radius:6px;background:var(--deck);min-width:0}
+.detail h2{color:var(--ink);margin:0;font-size:24px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--dim)}
+.status{font-family:var(--f-mono);font-size:12.5px;border:1px solid var(--rule);border-radius:3px;padding:1px 7px}
+.status.computed,.status.sourced{color:var(--sun);border-color:var(--sun)}
+.detail h3{font-size:13px;font-weight:500;color:var(--dim);margin:4px 0 0;letter-spacing:.02em}
+.refs{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow-y:auto}
+.tagbtn{display:flex;gap:8px;text-align:left;background:transparent;border:0;color:var(--ink);font:inherit;font-size:14px;padding:2px 0;cursor:pointer}
+.tagbtn:hover span:last-child{text-decoration:underline}
+.legend{font-size:13.5px;color:var(--dim)}
+.legend dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:6px 0 0}
+.legend dt{font-family:var(--f-mono);font-size:12.5px}
+.legend dd{margin:0}
+@media (max-width:760px){.lib{grid-template-columns:minmax(0,1fr)}.list{max-height:45vh}}
+</style>
+<main>
+  <nav class="nav"><a class="brand" href="index.html">Deep Space Strategy</a><a href="index.html">Home</a><a href="library.html" aria-current="page">Library</a><a href="https://bhanneke.github.io/solmaps/">Maps</a><a href="https://github.com/bhanneke/deep-space-strategy">GitHub</a></nav>
+  <h1>Library</h1>
+  <p class="lede">Every place, resource, route and computation has a permanent tag, shows where it comes from, and links to what it rests on and what rests on it.</p>
+  <div class="tools-row"><input id="q" type="search" placeholder="Search by name or tag" aria-label="Search the library"><span class="count" id="count"></span></div>
+  <div class="chips" id="kinds" aria-label="Filter by kind"></div>
+  <div class="chips" id="statuses" aria-label="Filter by status"></div>
+  <div class="lib">
+    <div class="list" id="list"></div>
+    <section class="detail" id="detail" aria-live="polite"></section>
+  </div>
+  <details class="legend"><summary>What the statuses mean</summary>
+    <dl>
+      <dt>computed</dt><dd>solmaps has computed it; anyone can recompute it.</dd>
+      <dt>running</dt><dd>The computation has started and is not finished.</dd>
+      <dt>open</dt><dd>Not computed yet.</dd>
+      <dt>sourced</dt><dd>Someone read the figure at its source.</dd>
+      <dt>derived</dt><dd>Calculated from sourced figures.</dd>
+      <dt>unchecked</dt><dd>Taken from a search result or background knowledge; nobody has read the source yet.</dd>
+    </dl>
+  </details>
+</main>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  const items = await fetch('library.json').then(r => r.json());
+  const byTag = new Map(items.map(i => [i.tag, i]));
+  const KINDS = ['Place', 'Resource', 'Route', 'Computation'], STATUSES = ['computed', 'running', 'open', 'sourced', 'derived', 'unchecked'];
+  const filt = {kind: new Set(), status: new Set(), q: ''};
+  const LIMIT = 300;
+  let current = null;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function chips(box, values, key) {
+    for (const v of values) {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.type = 'button'; b.textContent = v; b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => {
+        filt[key].has(v) ? filt[key].delete(v) : filt[key].add(v);
+        b.setAttribute('aria-pressed', filt[key].has(v));
+        renderList();
+      });
+      box.appendChild(b);
+    }
+  }
+  function matches(i) {
+    if (filt.kind.size && !filt.kind.has(i.kind)) return false;
+    if (filt.status.size && !filt.status.has(i.status)) return false;
+    if (!filt.q) return true;
+    return (i.tag + ' ' + i.title + ' ' + i.statement).toLowerCase().includes(filt.q);
+  }
+  function renderList() {
+    const hits = items.filter(matches), box = $('list');
+    $('count').textContent = `${hits.length.toLocaleString('en')} of ${items.length.toLocaleString('en')} items`;
+    box.innerHTML = hits.slice(0, LIMIT).map(i =>
+      `<button class="row" type="button" data-tag="${i.tag}"${i.tag === current ? ' aria-current="true"' : ''}><span class="tag">${i.tag}</span><span>${esc(i.title)}</span><small>${i.kind} · ${i.status}</small></button>`
+    ).join('') + (hits.length > LIMIT ? `<div class="more">Showing the first ${LIMIT}. Search or filter to narrow the list.</div>` : '');
+  }
+  function refs(list) {
+    return `<div class="refs">${list.map(t => { const r = byTag.get(t); return r ? `<button class="tagbtn" type="button" data-tag="${t}"><span class="tag">${t}</span><span>${esc(r.title)}</span></button>` : ''; }).join('')}</div>`;
+  }
+  function show(tag) {
+    const i = byTag.get(tag); if (!i) return;
+    current = tag;
+    if (location.hash !== '#' + tag) history.replaceState(null, '', '#' + tag);
+    const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } };
+    $('detail').innerHTML = `
+      <h2>${esc(i.title)}</h2>
+      <div class="meta"><span class="tag">Tag ${i.tag}</span><span>${i.kind}</span><span class="status ${i.status}">${i.status}</span>${i.extra ? `<span>${esc(i.extra)}</span>` : ''}</div>
+      <p>${esc(i.statement)}</p>
+      <div class="meta">${i.source ? `<a href="${esc(i.source)}" target="_blank" rel="noopener">Source: ${esc(host(i.source))}</a>` : ''}${i.link ? `<a href="${esc(i.link)}">Open in solmaps</a>` : ''}</div>
+      ${i.rests_on && i.rests_on.length ? `<h3>Rests on (${i.rests_on.length})</h3>${refs(i.rests_on)}` : ''}
+      ${i.used_by && i.used_by.length ? `<h3>Used by (${i.used_by.length})</h3>${refs(i.used_by)}` : ''}`;
+    document.querySelectorAll('.row').forEach(r => r.setAttribute('aria-current', r.dataset.tag === tag));
+  }
+  chips($('kinds'), KINDS, 'kind'); chips($('statuses'), STATUSES, 'status');
+  $('q').addEventListener('input', e => { filt.q = e.target.value.trim().toLowerCase(); renderList(); });
+  document.addEventListener('click', e => { const b = e.target.closest('[data-tag]'); if (b) show(b.dataset.tag); });
+  addEventListener('hashchange', () => show(location.hash.slice(1)));
+  const first = byTag.has(location.hash.slice(1)) ? location.hash.slice(1) : (items.find(i => i.title === 'Earth to Mars') || items[0]).tag;
+  renderList(); show(first);
+})();
+</script>
+
+</body></html>

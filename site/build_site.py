@@ -13,6 +13,9 @@ def wrap(html):
     return head + html + '\n</body></html>\n'
 
 (docs / 'index.html').write_text(wrap((root / 'site' / 'index.html').read_text()))
+(docs / 'library.html').write_text(wrap((root / 'site' / 'library.html').read_text()))
+for data in ('library.json', 'orbits.json'):   # refreshed by site/build_library.py and site/fetch_orbits.py
+    shutil.copy(root / 'site' / data, docs / data)
 shutil.copy(root / 'site' / '404.html', docs / '404.html')
 shutil.copy(root / 'site' / 'page.css', docs / 'page.css')
 (docs / '.nojekyll').write_text('')
