@@ -9,7 +9,10 @@ main{max-width:1040px}
 .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start;padding:28px 0 6px}
 .hero .text{display:flex;flex-direction:column;gap:14px;min-width:0}
 .hero figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
-#routes{display:block;width:100%;height:auto;aspect-ratio:1}
+.orrery{position:relative;width:100%;aspect-ratio:1;overflow:hidden}
+#routes{display:block;width:100%;height:100%;cursor:grab}
+#routes:active{cursor:grabbing}
+.orrery span{position:absolute;left:0;top:0;font-family:var(--f-mono);font-size:11px;color:var(--ink);pointer-events:none;white-space:nowrap;text-shadow:0 0 4px var(--void)}
 .counter{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
 .counter b{font-family:var(--f-display);font-weight:700;font-size:44px;line-height:1;color:var(--sun);font-variant-numeric:tabular-nums}
 .counter span{font-size:15px}
@@ -49,9 +52,9 @@ main{max-width:1040px}
     <p class="goal">The long-term goal is a primer for expanding the human frontier into the solar system.</p>
     </div>
     <figure>
-      <canvas id="routes" aria-label="The sun and 30 bodies on their orbits, with lines for the routes between them; bright lines mark the routes computed so far"></canvas>
+      <div class="orrery" id="orrery"><canvas id="routes" aria-label="A 3D view of the sun and 30 bodies on their orbits, with arcs for the routes between them; bright arcs mark the routes computed so far. Drag to turn it."></canvas></div>
       <div class="counter"><b id="routes-done">116</b><span>of 870 routes computed, each for every day from 2026 to 2100. <a href="https://bhanneke.github.io/solmaps/status.html">Status</a></span></div>
-      <figcaption>Schematic: orbits on a logarithmic distance scale, with the sun at the centre. The computation is still running.</figcaption>
+      <figcaption>Schematic: distances on a logarithmic scale, body sizes enlarged. The computation is still running.</figcaption>
     </figure>
   </div>
 
@@ -103,66 +106,122 @@ main{max-width:1040px}
   <h2>About</h2>
   <p>Björn Hanneke, information systems researcher at Goethe University Frankfurt, leads Deep Space Strategy. You can send questions and corrections through the <a href="https://github.com/bhanneke/deep-space-strategy/issues">GitHub repository</a>. The code is open under MIT, the data and texts under CC BY 4.0.</p>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 (() => {
-  const BODIES = [{"id": "earth", "a": 1.0, "label": "Earth"}, {"id": "venus", "a": 0.723, "label": ""}, {"id": "mercury", "a": 0.387, "label": ""}, {"id": "mars", "a": 1.524, "label": "Mars"}, {"id": "ceres", "a": 2.77, "label": ""}, {"id": "vesta", "a": 2.36, "label": ""}, {"id": "psyche", "a": 2.93, "label": ""}, {"id": "433", "a": 1.46, "label": ""}, {"id": "101955", "a": 1.13, "label": ""}, {"id": "162173", "a": 1.19, "label": ""}, {"id": "jupiter", "a": 5.203, "label": "Jupiter"}, {"id": "saturn", "a": 9.537, "label": "Saturn"}, {"id": "uranus", "a": 19.189, "label": "Uranus"}, {"id": "neptune", "a": 30.07, "label": "Neptune"}, {"id": "pluto", "a": 39.589, "label": "Pluto"}, {"id": "2", "a": 2.77, "label": ""}, {"id": "10", "a": 3.15, "label": ""}, {"id": "24", "a": 3.14, "label": ""}, {"id": "3", "a": 2.67, "label": ""}, {"id": "99942", "a": 0.922, "label": ""}, {"id": "65803", "a": 1.64, "label": ""}, {"id": "25143", "a": 1.32, "label": ""}, {"id": "341843", "a": 0.96, "label": ""}, {"id": "175706", "a": 1.05, "label": ""}, {"id": "4660", "a": 1.49, "label": ""}, {"id": "3548", "a": 5.22, "label": ""}, {"id": "15094", "a": 5.19, "label": ""}, {"id": "11351", "a": 5.31, "label": ""}, {"id": "21900", "a": 5.12, "label": ""}, {"id": "617", "a": 5.21, "label": ""}], ROUTES_PER_BODY = BODIES.length - 1;
+  const BODIES = [{"id": "earth", "a": 1.0, "c": 5217256, "r": 0.22, "label": "Earth"}, {"id": "venus", "a": 0.723, "c": 15126426, "r": 0.2, "label": ""}, {"id": "mercury", "a": 0.387, "c": 11051674, "r": 0.13, "label": ""}, {"id": "mars", "a": 1.524, "c": 14246714, "r": 0.17, "label": "Mars"}, {"id": "ceres", "a": 2.77, "c": 11450312, "r": 0.05, "label": ""}, {"id": "vesta", "a": 2.36, "c": 11450312, "r": 0.05, "label": ""}, {"id": "psyche", "a": 2.93, "c": 11450312, "r": 0.05, "label": ""}, {"id": "433", "a": 1.46, "c": 11450312, "r": 0.05, "label": ""}, {"id": "101955", "a": 1.13, "c": 11450312, "r": 0.05, "label": ""}, {"id": "162173", "a": 1.19, "c": 11450312, "r": 0.05, "label": ""}, {"id": "jupiter", "a": 5.203, "c": 14201994, "r": 0.46, "label": "Jupiter"}, {"id": "saturn", "a": 9.537, "c": 14930074, "r": 0.38, "label": "Saturn"}, {"id": "uranus", "a": 19.189, "c": 9428198, "r": 0.28, "label": "Uranus"}, {"id": "neptune", "a": 30.07, "c": 5207776, "r": 0.27, "label": "Neptune"}, {"id": "pluto", "a": 39.589, "c": 12757390, "r": 0.1, "label": "Pluto"}, {"id": "2", "a": 2.77, "c": 11450312, "r": 0.05, "label": ""}, {"id": "10", "a": 3.15, "c": 11450312, "r": 0.05, "label": ""}, {"id": "24", "a": 3.14, "c": 11450312, "r": 0.05, "label": ""}, {"id": "3", "a": 2.67, "c": 11450312, "r": 0.05, "label": ""}, {"id": "99942", "a": 0.922, "c": 11450312, "r": 0.05, "label": ""}, {"id": "65803", "a": 1.64, "c": 11450312, "r": 0.05, "label": ""}, {"id": "25143", "a": 1.32, "c": 11450312, "r": 0.05, "label": ""}, {"id": "341843", "a": 0.96, "c": 11450312, "r": 0.05, "label": ""}, {"id": "175706", "a": 1.05, "c": 11450312, "r": 0.05, "label": ""}, {"id": "4660", "a": 1.49, "c": 11450312, "r": 0.05, "label": ""}, {"id": "3548", "a": 5.22, "c": 11450312, "r": 0.05, "label": ""}, {"id": "15094", "a": 5.19, "c": 11450312, "r": 0.05, "label": ""}, {"id": "11351", "a": 5.31, "c": 11450312, "r": 0.05, "label": ""}, {"id": "21900", "a": 5.12, "c": 11450312, "r": 0.05, "label": ""}, {"id": "617", "a": 5.21, "c": 11450312, "r": 0.05, "label": ""}], ROUTES_PER_BODY = BODIES.length - 1;
   let done = new Set(["earth", "mars", "mercury", "venus"]);
-  const cv = document.getElementById('routes'), ctx = cv.getContext('2d'), out = document.getElementById('routes-done');
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const SUN = css('--sun'), LINE = css('--link'), DIM = css('--dim'), RULE = css('--rule'), INK = css('--ink');
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const lmin = Math.log(0.3), lmax = Math.log(45);
-  let S = 0, R = 0;
-  BODIES.forEach((b, i) => {
-    b.a0 = i * 2.399963;                                    // even spread (schematic positions)
-    b.w = 2 * Math.PI / (12 * Math.pow(b.a, 0.75));        // inner bodies faster; slowed for display
-    b.rho = 0.12 + 0.88 * (Math.log(b.a) - lmin) / (lmax - lmin);
-  });
-  function size() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    S = cv.clientWidth; R = S / 2 - 8;
-    cv.width = S * dpr; cv.height = S * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  const xy = (b, t) => { const a = b.a0 - b.w * t, r = b.rho * R; return [S / 2 + r * Math.cos(a), S / 2 + r * Math.sin(a)]; };
-  function draw(t) {
-    ctx.clearRect(0, 0, S, S);
-    const P = BODIES.map(b => xy(b, t));
-    ctx.strokeStyle = RULE; ctx.lineWidth = 1; ctx.globalAlpha = 0.55;
-    const seen = new Set();
-    for (const b of BODIES) if (!seen.has(b.rho)) { seen.add(b.rho); ctx.beginPath(); ctx.arc(S / 2, S / 2, b.rho * R, 0, 7); ctx.stroke(); }
-    for (let pass = 0; pass < 2; pass++) {
-      ctx.strokeStyle = pass ? LINE : DIM; ctx.globalAlpha = pass ? 0.5 : 0.05; ctx.lineWidth = pass ? 0.9 : 0.6;
-      ctx.beginPath();
-      BODIES.forEach((a, i) => BODIES.forEach((b, j) => {
-        if (j <= i) return;
-        const lit = done.has(a.id) || done.has(b.id);
-        if (lit !== !!pass) return;
-        const [x0, y0] = P[i], [x1, y1] = P[j];
-        ctx.moveTo(x0, y0); ctx.quadraticCurveTo((x0 + x1) / 2 * 0.8 + S / 2 * 0.2, (y0 + y1) / 2 * 0.8 + S / 2 * 0.2, x1, y1);
-      }));
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = SUN; ctx.beginPath(); ctx.arc(S / 2, S / 2, Math.max(4, R * 0.022), 0, 7); ctx.fill();
-    ctx.font = '11px "IBM Plex Mono",ui-monospace,monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    BODIES.forEach((b, i) => {
-      ctx.fillStyle = done.has(b.id) ? SUN : INK;
-      ctx.beginPath(); ctx.arc(P[i][0], P[i][1], b.label ? 3 : 1.8, 0, 7); ctx.fill();
-      if (b.label) {
-        const right = P[i][0] > S * 0.78;                  // keep labels near the right edge inside the figure
-        ctx.fillStyle = INK; ctx.textAlign = right ? 'right' : 'left';
-        ctx.fillText(b.label, P[i][0] + (right ? -6 : 6), P[i][1]);
-      }
-    });
-  }
-  size(); addEventListener('resize', () => { size(); draw(0); });
-  if (still) draw(0); else { const loop = now => { draw(now / 1000); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
-  // the counter reads the same feed as the status page; the value above stays if the feed cannot be reached
-  fetch('https://bhanneke.github.io/solmaps/progress.json').then(r => r.json()).then(j => {
+  const out = document.getElementById('routes-done'), box = document.getElementById('orrery'), cv = document.getElementById('routes');
+  // the counter reads the same feed as the status page; the printed value stays if the feed cannot be reached
+  const feed = fetch('https://bhanneke.github.io/solmaps/progress.json').then(r => r.json()).then(j => {
     done = new Set(j.transfers.done.filter(id => BODIES.some(b => b.id === id)));
     out.textContent = String(done.size * ROUTES_PER_BODY);
-    if (still) draw(0);
   }).catch(() => {});
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({canvas: cv, antialias: true, alpha: true}); }
+  catch (e) { box.hidden = true; return; }
+
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 500);
+  camera.position.set(0, 20, 34);
+  const controls = new THREE.OrbitControls(camera, cv);
+  controls.enableZoom = false; controls.enablePan = false; controls.enableDamping = true;
+  controls.autoRotate = !still; controls.autoRotateSpeed = 0.35;
+  controls.minPolarAngle = 0.25; controls.maxPolarAngle = 1.45;
+  if (matchMedia('(pointer: coarse)').matches) { controls.enableRotate = false; cv.style.touchAction = 'pan-y'; cv.style.cursor = 'default'; }
+  scene.add(new THREE.AmbientLight(0x6a7488, 1.3));
+  scene.add(new THREE.PointLight(0xfff1d6, 2.2, 0, 0));
+
+  const dispR = a => 3 * Math.log(1 + a / 0.35);            // logarithmic scale, as in the 3D atlas
+  // sun with glow
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.75, 40, 28), new THREE.MeshBasicMaterial({color: 0xffd27a})));
+  const gc = document.createElement('canvas'); gc.width = gc.height = 128;
+  const gx = gc.getContext('2d'), grad = gx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(255,214,130,.85)'); grad.addColorStop(1, 'rgba(255,170,60,0)');
+  gx.fillStyle = grad; gx.fillRect(0, 0, 128, 128);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(gc), blending: THREE.AdditiveBlending, depthWrite: false}));
+  glow.scale.set(6, 6, 1); scene.add(glow);
+  // the orbital plane: a faint disc and one ring per orbit
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(dispR(45), 96), new THREE.MeshBasicMaterial({color: 0x62a6ec, transparent: true, opacity: 0.035, side: THREE.DoubleSide, depthWrite: false}));
+  disc.rotation.x = -Math.PI / 2; scene.add(disc);
+  const ringMat = new THREE.LineBasicMaterial({color: 0x8a96ad, transparent: true, opacity: 0.22});
+  const seen = new Set();
+  // bodies
+  BODIES.forEach((b, i) => {
+    b.R = dispR(b.a); b.a0 = i * 2.399963; b.w = 2 * Math.PI / (14 * Math.pow(b.a, 0.75));
+    if (b.r >= 0.1 && !seen.has(b.R)) {
+      seen.add(b.R);
+      const pts = Array.from({length: 129}, (_, k) => new THREE.Vector3(b.R * Math.cos(k / 128 * 2 * Math.PI), 0, b.R * Math.sin(k / 128 * 2 * Math.PI)));
+      scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), ringMat));
+    }
+    b.mesh = new THREE.Mesh(new THREE.SphereGeometry(b.r, 28, 20), new THREE.MeshStandardMaterial({color: b.c, roughness: 0.85, metalness: 0}));
+    scene.add(b.mesh);
+    if (b.id === 'saturn') {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.72, 48), new THREE.MeshBasicMaterial({color: 0xcdbb8a, side: THREE.DoubleSide, transparent: true, opacity: 0.35}));
+      ring.rotation.x = -Math.PI / 2 + 0.45; b.mesh.add(ring);
+    }
+    if (b.label) { b.el = document.createElement('span'); b.el.textContent = b.label; box.appendChild(b.el); }
+  });
+  // routes: arcs above the plane, two line sets (computed and not yet computed)
+  const SEG = 14, pairs = [];
+  BODIES.forEach((x, i) => BODIES.forEach((y, j) => { if (j > i) pairs.push([x, y]); }));
+  function arcs(color, opacity) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pairs.length * SEG * 6), 3));
+    const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false}));
+    scene.add(l); return l;
+  }
+  const dim = arcs(0x8a96ad, 0.035), lit = arcs(0x62a6ec, 0.38);
+
+  function place(t) {
+    for (const b of BODIES) {
+      const a = b.a0 - b.w * t;
+      b.x = b.R * Math.cos(a); b.z = b.R * Math.sin(a);
+      b.mesh.position.set(b.x, 0, b.z);
+    }
+    const A = lit.geometry.attributes.position, B = dim.geometry.attributes.position;
+    let na = 0, nb = 0;
+    for (const [p, q] of pairs) {
+      const on = done.has(p.id) || done.has(q.id), arr = on ? A.array : B.array;
+      let n = on ? na : nb;
+      const d = Math.hypot(p.x - q.x, p.z - q.z), h = 0.22 * d;
+      let px = p.x, py = 0, pz = p.z;
+      for (let k = 1; k <= SEG; k++) {
+        const u = k / SEG, x = p.x + (q.x - p.x) * u, z = p.z + (q.z - p.z) * u, y = 4 * h * u * (1 - u);
+        arr[n++] = px; arr[n++] = py; arr[n++] = pz; arr[n++] = x; arr[n++] = y; arr[n++] = z;
+        px = x; py = y; pz = z;
+      }
+      if (on) na = n; else nb = n;
+    }
+    A.needsUpdate = B.needsUpdate = true;
+    lit.geometry.setDrawRange(0, na / 3); dim.geometry.setDrawRange(0, nb / 3);
+  }
+  const v = new THREE.Vector3();
+  function labels() {
+    const W = box.clientWidth, H = box.clientHeight;
+    for (const b of BODIES) if (b.el) {
+      v.set(b.x, 0, b.z).project(camera);
+      const x = (v.x + 1) / 2 * W, y = (1 - v.y) / 2 * H, right = x > W * 0.74;
+      b.el.style.transform = `translate(${right ? x - b.el.offsetWidth - 8 : x + 8}px,${y - 8}px)`;
+    }
+  }
+  function size() {
+    const S = box.clientWidth; if (!S) return;
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer.setSize(S, S, false);
+    camera.aspect = 1; camera.updateProjectionMatrix();
+  }
+  function frame(t) { place(t); controls.update(); renderer.render(scene, camera); labels(); }
+  size(); addEventListener('resize', () => { size(); if (still) frame(0); });
+  feed.then(() => { if (still) frame(0); });
+  if (still) { controls.addEventListener('change', () => frame(0)); frame(0); return; }
+  let visible = true;
+  if ('IntersectionObserver' in window) new IntersectionObserver(e => { visible = e[0].isIntersecting; }).observe(box);
+  const t0 = performance.now();
+  const loop = now => { if (visible) frame((now - t0) / 1000); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
 })();
 </script>
 
