@@ -101,7 +101,7 @@ for b in atlas['bodies']:
 for h in helio:
     if h not in by_id:
         add(f'place:{h}', 'Place', name_of(h), f'{name_of(h)}: {small[h].get("class") or "small body"}, semi-major axis {small[h]["a_au"]:g} AU',
-            'sourced', link=SOL + 'atlas.html', source=small[h].get('source'))
+            'sourced', link=SOL + f'solar-system-3d.html#body={h}', source=small[h].get('source'))
 done = set(progress['transfers']['done'])
 for a in helio:
     for b in helio:
@@ -109,7 +109,7 @@ for a in helio:
             add(f'route:{a}:{b}', 'Route', f'{name_of(a)} to {name_of(b)}',
                 f'Transfer options from {name_of(a)} to {name_of(b)} for every day from 2026 to 2100.',
                 'computed' if a in done else 'open', rests_on=[f'place:{a}', f'place:{b}', 'job:transfers'],
-                link=SOL + 'solar-system-3d.html')
+                link=SOL + f'solar-system-3d.html#route={a}-{b}')
 
 for t, it in items.items():
     for r in it['rests_on']:
