@@ -1,0 +1,16 @@
+# Deep Space Strategy
+
+> Deep Space Strategy studies how human activity could expand across the solar system. This site publishes its literature library, its parameter register and the maps library as static JSON files. They need no key and allow cross-origin requests.
+
+## Data
+- [research.json](https://bhanneke.github.io/deep-space-strategy/research.json): the literature library. One object per work: id (citekey), title, authors, year, venue, kind, bias, doi, url, themes, summary, abstract (rebuilt from OpenAlex), cited_by, openalex, oa_pdf, bibtex.
+- [candidates.json](https://bhanneke.github.io/deep-space-strategy/candidates.json): works that 78 fixed OpenAlex searches returned since 2006 and that nobody has reviewed yet. Fields: id (OpenAlex work id), title, year, venue, type, cited_by, doi, themes, queries (how many searches found it).
+- [parameters.json](https://bhanneke.github.io/deep-space-strategy/parameters.json): the parameter register. One object per number: id, domain, parameter, scope, value, low, high, unit, year, method (measured, estimated, list-price, contract, target, model, derived), source_url, locator, verification, bias, status (ok = verified at the source, must-check, conflict), note.
+- [topics.json](https://bhanneke.github.io/deep-space-strategy/topics.json): the topic vocabulary with counts.
+- [stats.json](https://bhanneke.github.io/deep-space-strategy/stats.json): counts and works per year.
+- [library.json](https://bhanneke.github.io/deep-space-strategy/library.json): places, resources, routes and computations under permanent four-character tags.
+
+## Rules for use
+- Cite a parameter only with status ok, or say that it is unverified.
+- A target is a goal someone announced, never an achieved figure.
+- Maps and the route engine: https://bhanneke.github.io/solmaps/

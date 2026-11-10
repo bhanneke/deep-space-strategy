@@ -13,8 +13,10 @@ def wrap(html):
     return head + html + '\n</body></html>\n'
 
 (docs / 'index.html').write_text(wrap((root / 'site' / 'index.html').read_text()))
-(docs / 'library.html').write_text(wrap((root / 'site' / 'library.html').read_text()))
-for data in ('library.json', 'orbits.json'):   # refreshed by site/build_library.py and site/fetch_orbits.py
+for page in ('library.html', 'research.html', 'parameters.html'):
+    (docs / page).write_text(wrap((root / 'site' / page).read_text()))
+# refreshed by site/build_library.py, site/fetch_orbits.py and site/build_research.py
+for data in ('library.json', 'orbits.json', 'research.json', 'candidates.json', 'parameters.json', 'topics.json', 'stats.json', 'llms.txt'):
     shutil.copy(root / 'site' / data, docs / data)
 shutil.copy(root / 'site' / '404.html', docs / '404.html')
 shutil.copy(root / 'site' / 'page.css', docs / 'page.css')

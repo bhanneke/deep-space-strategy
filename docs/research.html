@@ -1,0 +1,191 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>
+<title>Research · Deep Space Strategy</title>
+<meta name="description" content="The literature behind Deep Space Strategy: papers, reports and books on space economics, resources, transport, law and strategy, with summaries, abstracts and BibTeX, plus the works still waiting for review.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="page.css">
+<style>
+main{max-width:1040px}
+.nav{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14.5px;align-items:baseline}
+.nav .brand{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);text-decoration:none;margin-right:auto}
+.nav a:not(.brand){color:var(--dim);text-decoration:none}
+.nav a:hover,.nav a[aria-current]{color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{border:1px solid var(--rule);border-radius:8px;background:var(--deck);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--f-display);font-size:34px;letter-spacing:.03em;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{color:var(--dim);font-size:13.5px}
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.topic{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border:1px solid var(--rule);border-radius:8px;background:var(--deck);color:var(--ink);font:inherit;cursor:pointer}
+.topic:hover,.topic[aria-pressed=true]{border-color:var(--sun)}
+.topic strong{font-size:15px}
+.topic span{color:var(--dim);font-size:13px;line-height:1.45}
+.topic em{font-style:normal;color:var(--sun);font-size:12.5px;font-family:var(--f-mono)}
+.chart{display:flex;align-items:flex-end;gap:2px;height:150px;padding-top:8px;border-bottom:1px solid var(--rule)}
+.bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative;cursor:default}
+.bar i{display:block;background:var(--sun);border-radius:4px 4px 0 0;min-height:2px}
+.bar:hover i{filter:brightness(1.2)}
+.bar .tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--deck);border:1px solid var(--rule);border-radius:4px;padding:3px 7px;font-size:12.5px;white-space:nowrap;display:none;z-index:2}
+.bar:hover .tip,.bar:focus .tip{display:block}
+.axis{display:flex;justify-content:space-between;color:var(--dim);font-size:12.5px;font-family:var(--f-mono)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{font:inherit;font-size:14px;background:transparent;border:1px solid var(--rule);border-radius:6px;color:var(--dim);padding:6px 14px;cursor:pointer}
+.tab[aria-selected=true]{border-color:var(--sun);color:var(--ink)}
+.tools-row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+#q{flex:1 1 240px;min-width:0;background:var(--deck);border:1px solid var(--rule);border-radius:4px;color:var(--ink);font:inherit;font-size:15px;padding:7px 10px}
+select{background:var(--deck);border:1px solid var(--rule);border-radius:4px;color:var(--ink);font:inherit;font-size:14px;padding:6px 8px;max-width:100%}
+#q:focus-visible,.tab:focus-visible,.topic:focus-visible,.row:focus-visible,select:focus-visible{outline:2px solid var(--link);outline-offset:1px}
+.count{color:var(--dim);font-size:13.5px}
+.lib{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:22px;align-items:start}
+.list{display:flex;flex-direction:column;max-height:75vh;overflow-y:auto;border:1px solid var(--rule);border-radius:6px}
+.row{display:flex;flex-direction:column;gap:1px;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--rule);color:var(--ink);font:inherit;font-size:14px;padding:8px 10px;cursor:pointer}
+.row:hover{background:var(--deck)}
+.row[aria-current=true]{background:var(--deck);box-shadow:inset 2px 0 0 var(--sun)}
+.row small{color:var(--dim);font-size:12.5px}
+.more{padding:8px 10px;color:var(--dim);font-size:13px}
+.detail{display:flex;flex-direction:column;gap:12px;padding:16px 18px;border:1px solid var(--rule);border-radius:6px;background:var(--deck);min-width:0}
+.detail h3{font-family:var(--f-display);font-weight:600;font-size:22px;letter-spacing:.03em;margin:0;line-height:1.2}
+.detail h4{font-size:13px;font-weight:500;color:var(--dim);margin:2px 0 0;letter-spacing:.02em}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--dim)}
+.pill{font-family:var(--f-mono);font-size:12px;border:1px solid var(--rule);border-radius:3px;padding:1px 7px;color:var(--dim)}
+.pill.t{color:var(--sun);border-color:var(--sun)}
+.detail pre{font-size:12px;white-space:pre-wrap;word-break:break-word}
+.copy{align-self:flex-start;font:inherit;font-size:13px;background:transparent;border:1px solid var(--rule);border-radius:4px;color:var(--ink);padding:3px 10px;cursor:pointer}
+@media (max-width:760px){.lib{grid-template-columns:minmax(0,1fr)}.list{max-height:50vh}}
+</style>
+<main>
+  <nav class="nav"><a class="brand" href="index.html">Deep Space Strategy</a><a href="index.html">Home</a><a href="library.html">Library</a><a href="research.html" aria-current="page">Research</a><a href="parameters.html">Parameters</a><a href="https://bhanneke.github.io/solmaps/">Maps</a><a href="https://github.com/bhanneke/deep-space-strategy">GitHub</a></nav>
+  <h1>Research</h1>
+  <p class="lede">The literature behind Deep Space Strategy: papers, reports, books and filings on space economics, resources, transport, law and strategy. Each work lists its topics, our short summary where someone has read it, the abstract from OpenAlex and a BibTeX entry. A second list shows the works a search of OpenAlex found since 2006 that nobody has reviewed yet.</p>
+  <div class="stats" id="stats"></div>
+
+  <h2 id="topics-h">Topics</h2>
+  <p>Pick a topic to filter the lists below. The first number counts works in the library, the second the works waiting for review.</p>
+  <div class="topics" id="topics"></div>
+
+  <h2>Works per year</h2>
+  <p>Works in the library and in the review list by year of publication, from 2006 on.</p>
+  <div><div class="chart" id="chart" role="img" aria-label="Works per year"></div><div class="axis" id="axis"></div></div>
+
+  <h2 id="browse">Browse</h2>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-lib" aria-selected="true" type="button">Library</button>
+    <button class="tab" role="tab" id="tab-cand" aria-selected="false" type="button">To review</button>
+  </div>
+  <p class="count" id="tabnote"></p>
+  <div class="tools-row">
+    <input id="q" type="search" placeholder="Search titles, authors, venues" aria-label="Search">
+    <select id="topic" aria-label="Topic"><option value="">All topics</option></select>
+    <select id="kind" aria-label="Kind"><option value="">All kinds</option></select>
+    <select id="sort" aria-label="Sort"><option value="year">Newest first</option><option value="cited">Most cited</option></select>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="lib">
+    <div class="list" id="list"></div>
+    <section class="detail" id="detail" aria-live="polite"></section>
+  </div>
+
+  <h2>Data</h2>
+  <p>Every list on this page comes from plain JSON files that anyone can download or query from code, without a key: <a href="research.json">research.json</a> (the library), <a href="candidates.json">candidates.json</a> (the review list), <a href="topics.json">topics.json</a> and <a href="stats.json">stats.json</a>. The parameter register sits in <a href="parameters.json">parameters.json</a>. AI agents find a short guide in <a href="llms.txt">llms.txt</a>.</p>
+  <p class="foot">Abstracts, citation counts and the review list come from <a href="https://openalex.org">OpenAlex</a> (CC0); OpenAlex stores abstracts as an inverted index, and this site rebuilds the text from it. Summaries are our own. The library grows each week.</p>
+</main>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const fmt = n => Number(n).toLocaleString('en');
+  const [papers, topics, stats] = await Promise.all(['research.json', 'topics.json', 'stats.json'].map(f => fetch(f).then(r => r.json())));
+  const tName = Object.fromEntries(topics.map(t => [t.id, t.id.replace(/-/g, ' ')]));
+  let cands = null, mode = 'lib', current = null;
+  const LIMIT = 300;
+
+  const years = Object.keys(stats.years).map(Number);
+  $('stats').innerHTML = [
+    [stats.papers, 'works in the library'], [stats.candidates, 'works waiting for review'],
+    [stats.parameters, 'numbers in the parameter register'], [stats.topics, 'topics'],
+    [`${Math.min(...years)}–${Math.max(...years)}`, 'years covered by the search']
+  ].map(([n, l]) => `<div class="stat"><b>${typeof n === 'number' ? fmt(n) : n}</b><span>${l}</span></div>`).join('');
+
+  const tsorted = topics.filter(t => t.papers + t.candidates > 0).sort((a, b) => (b.papers + b.candidates) - (a.papers + a.candidates));
+  $('topics').innerHTML = tsorted.map(t => `<button class="topic" type="button" data-topic="${t.id}" aria-pressed="false"><strong>${esc(tName[t.id])}</strong><span>${esc(t.description)}</span><em>${fmt(t.papers)} · ${fmt(t.candidates)}</em></button>`).join('');
+  $('topic').innerHTML += tsorted.map(t => `<option value="${t.id}">${esc(tName[t.id])}</option>`).join('');
+
+  const tot = years.map(y => stats.years[y][0] + stats.years[y][1]), max = Math.max(...tot);
+  $('chart').innerHTML = years.map((y, i) => `<div class="bar" tabindex="0"><i style="height:${(tot[i] / max * 100).toFixed(1)}%"></i><span class="tip">${y}: ${fmt(tot[i])} works</span></div>`).join('');
+  $('axis').innerHTML = `<span>${years[0]}</span><span>highest bar: ${fmt(max)} works</span><span>${years[years.length - 1]}</span>`;
+
+  const kinds = [...new Set(papers.map(p => p.kind).filter(Boolean))].sort();
+  function setKinds() {
+    const list = mode === 'lib' ? kinds : [...new Set(cands.map(c => c.type).filter(Boolean))].sort();
+    $('kind').innerHTML = '<option value="">All kinds</option>' + list.map(k => `<option>${esc(k)}</option>`).join('');
+  }
+  setKinds();
+
+  function items() { return mode === 'lib' ? papers : cands; }
+  function matches(i, q, topic, kind) {
+    if (topic && !i.themes.includes(topic)) return false;
+    if (kind && (i.kind || i.type) !== kind) return false;
+    if (!q) return true;
+    return `${i.title} ${i.authors || ''} ${i.venue} ${i.id}`.toLowerCase().includes(q);
+  }
+  function renderList() {
+    const q = $('q').value.trim().toLowerCase(), topic = $('topic').value, kind = $('kind').value;
+    let hits = items().filter(i => matches(i, q, topic, kind));
+    if ($('sort').value === 'cited') hits = [...hits].sort((a, b) => (b.cited_by ?? -1) - (a.cited_by ?? -1));
+    else hits = [...hits].sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+    $('count').textContent = `${fmt(hits.length)} of ${fmt(items().length)}`;
+    $('list').innerHTML = hits.slice(0, LIMIT).map(i => `<button class="row" type="button" data-id="${esc(i.id)}"${i.id === current ? ' aria-current="true"' : ''}><span>${esc(i.title)}</span><small>${[i.authors, i.year, i.venue].filter(Boolean).map(esc).join(' · ')}${i.cited_by ? ` · cited ${fmt(i.cited_by)}` : ''}</small></button>`).join('')
+      + (hits.length > LIMIT ? `<div class="more">Showing the first ${LIMIT}. Search or filter to narrow the list.</div>` : '');
+    if (!current && hits[0]) show(hits[0].id, false);
+  }
+  function show(id, push = true) {
+    const i = items().find(x => x.id === id); if (!i) return;
+    current = id;
+    if (push) history.replaceState(null, '', `#${mode === 'lib' ? '' : 'r/'}${id}`);
+    const links = [i.url && `<a href="${esc(i.url)}" target="_blank" rel="noopener">Source</a>`,
+      i.doi && !i.url && `<a href="https://doi.org/${esc(i.doi)}" target="_blank" rel="noopener">DOI</a>`,
+      i.oa_pdf && `<a href="${esc(i.oa_pdf)}" target="_blank" rel="noopener">Open-access PDF</a>`,
+      (i.openalex || mode === 'cand') && `<a href="https://openalex.org/works/${esc(i.openalex || i.id)}" target="_blank" rel="noopener">OpenAlex</a>`].filter(Boolean).join('');
+    $('detail').innerHTML = `
+      <h3>${esc(i.title)}</h3>
+      <div class="meta">${[i.authors, i.year, i.venue].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
+      <div class="meta"><span class="pill">${esc(i.kind || i.type)}</span>${i.bias && i.bias !== 'none' ? `<span class="pill" title="The source has an interest in the topic">${esc(i.bias)} source</span>` : ''}${i.cited_by != null ? `<span>cited ${fmt(i.cited_by)} times</span>` : ''}${mode === 'cand' ? `<span>found by ${i.queries} search ${i.queries > 1 ? 'queries' : 'query'}</span>` : ''}</div>
+      ${i.themes.length ? `<div class="meta">${i.themes.map(t => `<span class="pill t">${esc(tName[t] || t)}</span>`).join('')}</div>` : ''}
+      ${i.summary ? `<h4>Our summary</h4><p>${esc(i.summary)}</p>` : ''}
+      ${i.abstract ? `<h4>Abstract</h4><p>${esc(i.abstract)}</p>` : ''}
+      ${mode === 'cand' ? '<p class="count">Nobody has reviewed this work yet. A search of OpenAlex found it; it enters the library once someone reads it.</p>' : ''}
+      <div class="meta">${links}</div>
+      ${i.bibtex ? `<h4>BibTeX</h4><pre id="bib">${esc(i.bibtex)}</pre><button class="copy" type="button" id="copy">Copy BibTeX</button>` : ''}`;
+    document.querySelectorAll('.row').forEach(r => r.setAttribute('aria-current', r.dataset.id === id));
+  }
+  async function setMode(m) {
+    mode = m; current = null;
+    if (m === 'cand' && !cands) { $('list').innerHTML = '<div class="more">Loading the review list…</div>'; cands = await fetch('candidates.json').then(r => r.json()); }
+    $('tab-lib').setAttribute('aria-selected', m === 'lib'); $('tab-cand').setAttribute('aria-selected', m === 'cand');
+    $('tabnote').textContent = m === 'lib'
+      ? 'Works someone has added to the library, with their sources and, where read, our summary.'
+      : `Works a fixed set of 78 searches of OpenAlex returned since 2006, before anyone reviewed them. Expect some that miss the topic. Another ${fmt(stats.reserve)} technical works (engineering, planetary science) stay in reserve and do not appear here.`;
+    $('sort').value = m === 'lib' ? 'year' : 'cited';
+    setKinds(); renderList();
+  }
+  $('tab-lib').addEventListener('click', () => setMode('lib'));
+  $('tab-cand').addEventListener('click', () => setMode('cand'));
+  ['q', 'topic', 'kind', 'sort'].forEach(id => $(id).addEventListener('input', () => { current = null; renderList(); }));
+  $('topics').addEventListener('click', e => {
+    const b = e.target.closest('[data-topic]'); if (!b) return;
+    const on = $('topic').value !== b.dataset.topic;
+    $('topic').value = on ? b.dataset.topic : '';
+    document.querySelectorAll('.topic').forEach(x => x.setAttribute('aria-pressed', on && x === b));
+    current = null; renderList(); $('browse').scrollIntoView({behavior: 'smooth'});
+  });
+  document.addEventListener('click', e => {
+    const r = e.target.closest('.row'); if (r) show(r.dataset.id);
+    if (e.target.id === 'copy') { navigator.clipboard.writeText($('bib').textContent); e.target.textContent = 'Copied'; }
+  });
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h.startsWith('r/')) { await setMode('cand'); show(h.slice(2)); }
+  else { renderList(); if (h && papers.some(p => p.id === h)) show(h); }
+})();
+</script>
+
+</body></html>

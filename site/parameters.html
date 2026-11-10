@@ -1,0 +1,144 @@
+<title>Parameters · Deep Space Strategy</title>
+<meta name="description" content="Every number Deep Space Strategy uses in its models, from metal prices and launch costs to landing records and reactor targets, with its source, the kind of number and whether someone has checked it at the source.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="page.css">
+<style>
+main{max-width:1040px}
+.nav{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14.5px;align-items:baseline}
+.nav .brand{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);text-decoration:none;margin-right:auto}
+.nav a:not(.brand){color:var(--dim);text-decoration:none}
+.nav a:hover,.nav a[aria-current]{color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{border:1px solid var(--rule);border-radius:8px;background:var(--deck);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--f-display);font-size:34px;letter-spacing:.03em;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{color:var(--dim);font-size:13.5px}
+.tools-row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+#q{flex:1 1 240px;min-width:0;background:var(--deck);border:1px solid var(--rule);border-radius:4px;color:var(--ink);font:inherit;font-size:15px;padding:7px 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;background:transparent;border:1px solid var(--rule);border-radius:999px;color:var(--dim);padding:3px 11px;cursor:pointer}
+.chip[aria-pressed=true]{border-color:var(--sun);color:var(--ink)}
+#q:focus-visible,.chip:focus-visible,tr:focus-visible{outline:2px solid var(--link);outline-offset:1px}
+.count{color:var(--dim);font-size:13.5px}
+.lib{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:22px;align-items:start}
+.tablebox{max-height:75vh;overflow:auto;border:1px solid var(--rule);border-radius:6px}
+.tablebox table{font-size:13.5px;table-layout:fixed}
+.tablebox th:nth-child(1){width:46%}.tablebox th:nth-child(2){width:28%}.tablebox th:nth-child(3){width:10%}.tablebox th:nth-child(4){width:16%}
+.tablebox td{overflow-wrap:anywhere}
+.tablebox th{position:sticky;top:0;background:var(--void);padding:7px 8px;z-index:1}
+.tablebox td{padding:6px 8px}
+.tablebox tbody tr{cursor:pointer}
+.tablebox tbody tr:hover,.tablebox tbody tr[aria-current=true]{background:var(--deck)}
+.tablebox tbody tr[aria-current=true] td:first-child{box-shadow:inset 2px 0 0 var(--sun)}
+.num{font-variant-numeric:tabular-nums;min-width:90px}
+.num b{font-weight:400}
+.tablebox td:nth-child(3),.tablebox td:nth-child(4){white-space:nowrap}
+.st{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--rule);border-radius:3px;padding:0 6px;white-space:nowrap;color:var(--dim)}
+.st.ok{color:var(--sun);border-color:var(--sun)}
+.st.conflict{color:#e58a7a;border-color:#e58a7a}
+.detail{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border:1px solid var(--rule);border-radius:6px;background:var(--deck);min-width:0}
+.detail h3{font-family:var(--f-display);font-weight:600;font-size:22px;letter-spacing:.03em;margin:0;line-height:1.2}
+.big{font-family:var(--f-display);font-size:30px;letter-spacing:.02em}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:14px}
+.detail dt{color:var(--dim)}
+.detail dd{margin:0;overflow-wrap:anywhere}
+.legend{font-size:13.5px;color:var(--dim)}
+.legend dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:6px 0 0}
+.legend dt{font-family:var(--f-mono);font-size:12.5px}
+.legend dd{margin:0}
+@media (max-width:860px){.lib{grid-template-columns:minmax(0,1fr)}.tablebox{max-height:55vh}.hide-s{display:none}.tablebox th:nth-child(1){width:52%}.tablebox th:nth-child(2){width:28%}.tablebox th:nth-child(4){width:20%}}
+</style>
+<main>
+  <nav class="nav"><a class="brand" href="index.html">Deep Space Strategy</a><a href="index.html">Home</a><a href="library.html">Library</a><a href="research.html">Research</a><a href="parameters.html" aria-current="page">Parameters</a><a href="https://bhanneke.github.io/solmaps/">Maps</a><a href="https://github.com/bhanneke/deep-space-strategy">GitHub</a></nav>
+  <h1>Parameters</h1>
+  <p class="lede">Every number our models can use, one row each: the price of platinum, the cost per kilogram to orbit, the record of lunar landings, the power a lunar reactor should deliver. Each row names its source, says what kind of number it is (a measurement, a list price, an estimate or a company's goal) and whether someone has read it at the source.</p>
+  <div class="stats" id="stats"></div>
+  <div class="tools-row"><input id="q" type="search" placeholder="Search parameter, scope or unit" aria-label="Search parameters"><span class="count" id="count"></span></div>
+  <div class="chips" id="domains" aria-label="Filter by domain"></div>
+  <div class="chips" id="methods" aria-label="Filter by kind of number"></div>
+  <div class="chips" id="statuses" aria-label="Filter by status"></div>
+  <div class="lib">
+    <div class="tablebox"><table><thead><tr><th>Parameter</th><th>Value</th><th class="hide-s">Year</th><th>Status</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <section class="detail" id="detail" aria-live="polite"></section>
+  </div>
+  <details class="legend" open><summary>What the labels mean</summary>
+    <dl>
+      <dt>measured</dt><dd>An observed figure: market data, a flight result, a count.</dd>
+      <dt>estimated</dt><dd>A statistical or econometric estimate, such as a demand elasticity.</dd>
+      <dt>list price</dt><dd>A price the seller publishes.</dd>
+      <dt>contract</dt><dd>The value of a signed contract.</dd>
+      <dt>target</dt><dd>A goal a company or agency has announced; nothing has achieved it yet.</dd>
+      <dt>model</dt><dd>The output of an engineering or economic model.</dd>
+      <dt>derived</dt><dd>Our arithmetic on other rows.</dd>
+      <dt>verified</dt><dd>Someone opened the source and read the number there.</dd>
+      <dt>to check</dt><dd>The number comes from a search result, a secondary source or our arithmetic; nobody has read it at the primary source yet.</dd>
+      <dt>sources disagree</dt><dd>Two sources give different numbers; the note says which.</dd>
+    </dl>
+  </details>
+  <p class="foot">Download the register as <a href="parameters.json">parameters.json</a>. The register grows each week; a row never changes its value, and a newer figure enters as a new row.</p>
+</main>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const rows = await fetch('parameters.json').then(r => r.json());
+  const ST = {'ok': 'verified', 'must-check': 'to check', 'conflict': 'sources disagree', 'retracted': 'retracted'};
+  const filt = {domain: new Set(), method: new Set(), status: new Set(), q: ''};
+  let current = null;
+  const num = v => { const n = Number(v); return v === '' || isNaN(n) ? esc(v) : n.toLocaleString('en', {maximumFractionDigits: 4}); };
+  const value = r => num(r.value) + (r.low !== '' || r.high !== '' ? ` <span class="count">(${r.low !== '' ? num(r.low) : '…'}–${r.high !== '' ? num(r.high) : '…'})</span>` : '');
+  const cnt = s => rows.filter(r => r.status === s).length;
+  $('stats').innerHTML = [[rows.length, 'numbers'], [cnt('ok'), 'verified at the source'], [cnt('must-check'), 'still to check'], [cnt('conflict'), 'where sources disagree']]
+    .map(([n, l]) => `<div class="stat"><b>${n.toLocaleString('en')}</b><span>${l}</span></div>`).join('');
+
+  function chips(box, values, key, label = v => v) {
+    for (const v of values) {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.type = 'button'; b.textContent = label(v); b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => { filt[key].has(v) ? filt[key].delete(v) : filt[key].add(v); b.setAttribute('aria-pressed', filt[key].has(v)); render(); });
+      box.appendChild(b);
+    }
+  }
+  function matches(r) {
+    if (filt.domain.size && !filt.domain.has(r.domain)) return false;
+    if (filt.method.size && !filt.method.has(r.method)) return false;
+    if (filt.status.size && !filt.status.has(r.status)) return false;
+    return !filt.q || `${r.id} ${r.parameter} ${r.scope} ${r.unit}`.toLowerCase().includes(filt.q);
+  }
+  function render() {
+    const hits = rows.filter(matches);
+    $('count').textContent = `${hits.length.toLocaleString('en')} of ${rows.length.toLocaleString('en')} rows`;
+    $('rows').innerHTML = hits.map(r => `<tr tabindex="0" data-id="${r.id}"${r.id === current ? ' aria-current="true"' : ''}><td>${esc(r.parameter)}<br><span class="count">${esc(r.scope)}</span></td><td class="num"><b>${value(r)}</b><br><span class="count">${esc(r.unit)}</span></td><td class="hide-s">${esc(r.year)}</td><td><span class="st ${r.status}">${ST[r.status] || esc(r.status)}</span></td></tr>`).join('');
+  }
+  function show(id) {
+    const r = rows.find(x => x.id === id); if (!r) return;
+    current = id; history.replaceState(null, '', '#' + id);
+    let host = ''; try { host = new URL(r.source_url).hostname.replace(/^www\./, ''); } catch (e) {}
+    $('detail').innerHTML = `
+      <h3>${esc(r.parameter)}</h3>
+      <div class="count">${esc(r.scope)}</div>
+      <div><span class="big">${value(r)}</span> ${esc(r.unit)}</div>
+      <dl>
+        <dt>Row</dt><dd>${r.id}</dd>
+        <dt>Year</dt><dd>${esc(r.year)}</dd>
+        <dt>Domain</dt><dd>${esc(r.domain)}</dd>
+        <dt>Kind of number</dt><dd>${esc(r.method.replace('-', ' '))}</dd>
+        <dt>Status</dt><dd><span class="st ${r.status}">${ST[r.status] || esc(r.status)}</span> (${esc(r.verification.replace('-', ' '))})</dd>
+        ${r.bias && r.bias !== 'none' ? `<dt>Source interest</dt><dd>${esc(r.bias)}</dd>` : ''}
+        ${r.source_url ? `<dt>Source</dt><dd><a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(host || r.source_url)}</a>${r.locator ? `, ${esc(r.locator)}` : ''}</dd>` : ''}
+        ${r.note ? `<dt>Note</dt><dd>${esc(r.note)}</dd>` : ''}
+      </dl>`;
+    document.querySelectorAll('#rows tr').forEach(t => t.setAttribute('aria-current', t.dataset.id === id));
+  }
+  chips($('domains'), ['economics', 'technology'], 'domain');
+  chips($('methods'), ['measured', 'estimated', 'list-price', 'contract', 'target', 'model', 'derived'], 'method', v => v.replace('-', ' '));
+  chips($('statuses'), ['ok', 'must-check', 'conflict'], 'status', v => ST[v]);
+  $('q').addEventListener('input', e => { filt.q = e.target.value.trim().toLowerCase(); render(); });
+  $('rows').addEventListener('click', e => { const t = e.target.closest('tr'); if (t) show(t.dataset.id); });
+  $('rows').addEventListener('keydown', e => { if (e.key === 'Enter') { const t = e.target.closest('tr'); if (t) show(t.dataset.id); } });
+  render();
+  const h = location.hash.slice(1);
+  show(rows.some(r => r.id === h) ? h : (rows.find(r => /platinum/i.test(r.scope) && r.status === 'ok') || rows[0]).id);
+})();
+</script>
