@@ -76,7 +76,7 @@ select{background:var(--deck);border:1px solid var(--rule);border-radius:4px;col
     <input id="q" type="search" placeholder="Search titles, authors, venues" aria-label="Search">
     <select id="topic" aria-label="Topic"><option value="">All topics</option></select>
     <select id="kind" aria-label="Kind"><option value="">All kinds</option></select>
-    <select id="sort" aria-label="Sort"><option value="year">Newest first</option><option value="cited">Most cited</option></select>
+    <select id="sort" aria-label="Sort"><option value="cited">Most cited</option><option value="year">Newest first</option></select>
     <span class="count" id="count"></span>
   </div>
   <div class="lib">
@@ -137,9 +137,18 @@ select{background:var(--deck);border:1px solid var(--rule);border-radius:4px;col
       + (hits.length > LIMIT ? `<div class="more">Showing the first ${LIMIT}. Search or filter to narrow the list.</div>` : '');
     if (!current && hits[0]) show(hits[0].id, false);
   }
-  function show(id, push = true) {
-    const i = items().find(x => x.id === id); if (!i) return;
+  const shardCache = new Map();
+  const shardOf = key => [...key].reduce((s, c) => s + c.charCodeAt(0), 0) % 64;   // same rule as build_research.py
+  async function detail(id) {
+    const n = shardOf(id);
+    if (!shardCache.has(n)) shardCache.set(n, fetch(`research/d${String(n).padStart(2, '0')}.json`).then(r => r.json()));
+    return (await shardCache.get(n))[id] || {};
+  }
+  async function show(id, push = true) {
+    const base = items().find(x => x.id === id); if (!base) return;
     current = id;
+    const i = mode === 'lib' ? {...base, ...(await detail(id))} : base;
+    if (current !== id) return;
     if (push) history.replaceState(null, '', `#${mode === 'lib' ? '' : 'r/'}${id}`);
     const links = [i.url && `<a href="${esc(i.url)}" target="_blank" rel="noopener">Source</a>`,
       i.doi && !i.url && `<a href="https://doi.org/${esc(i.doi)}" target="_blank" rel="noopener">DOI</a>`,
@@ -164,7 +173,7 @@ select{background:var(--deck);border:1px solid var(--rule);border-radius:4px;col
     $('tabnote').textContent = m === 'lib'
       ? 'Works someone has added to the library, with their sources and, where read, our summary.'
       : `Works a fixed set of 78 searches of OpenAlex returned since 2006, before anyone reviewed them. Expect some that miss the topic.${stats.screened ? ` A first screening of ${fmt(stats.screened)} titles and abstracts moved ${fmt(stats.screened_in)} works into the library and set ${fmt(stats.screened_out)} aside.` : ''} Another ${fmt(stats.reserve)} technical works (engineering, planetary science) stay in reserve and do not appear here.`;
-    $('sort').value = m === 'lib' ? 'year' : 'cited';
+    $('sort').value = 'cited';
     setKinds(); renderList();
   }
   $('tab-lib').addEventListener('click', () => setMode('lib'));

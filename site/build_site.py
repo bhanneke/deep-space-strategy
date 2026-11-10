@@ -18,6 +18,8 @@ for page in ('library.html', 'research.html', 'parameters.html'):
 # refreshed by site/build_library.py, site/fetch_orbits.py and site/build_research.py
 for data in ('library.json', 'orbits.json', 'research.json', 'candidates.json', 'parameters.json', 'topics.json', 'stats.json', 'llms.txt'):
     shutil.copy(root / 'site' / data, docs / data)
+shutil.rmtree(docs / 'research', ignore_errors=True)   # detail shards from site/build_research.py
+shutil.copytree(root / 'site' / 'research', docs / 'research')
 shutil.copy(root / 'site' / '404.html', docs / '404.html')
 shutil.copy(root / 'site' / 'page.css', docs / 'page.css')
 (docs / '.nojekyll').write_text('')

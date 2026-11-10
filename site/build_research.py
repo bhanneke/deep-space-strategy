@@ -24,7 +24,7 @@ out = pathlib.Path(__file__).resolve().parent
 
 def clean(s):
     s = re.sub(r'\\[a-zA-Z]+\{([^}]*)\}', r'\1', s or '')
-    s = s.replace('{', '').replace('}', '').replace('\\&', '&').replace('\\%', '%').replace('--', '–')
+    s = s.replace('{', '').replace('}', '').replace('\\&', '&').replace('\\%', '%').replace('--', '–').replace('**', '')
     return re.sub(r'\s+', ' ', s).strip()
 
 
@@ -145,10 +145,32 @@ stats = {'papers': len(papers), 'candidates': len(candidates), 'parameters': len
          'screened_out': sum(v == 'exclude' for v in screened.values())}
 (out / 'stats.json').write_text(json.dumps(stats, separators=(',', ':')))
 
+# the list page loads a small index; abstracts, summaries and BibTeX sit in 64 detail shards
+DETAIL = ('summary', 'abstract', 'bibtex', 'url', 'doi', 'openalex', 'oa_pdf')
+SHARDS = 64
+
+
+def shard(key):
+    return sum(ord(c) for c in key) % SHARDS   # same rule in research.html
+
+
+shards = [{} for _ in range(SHARDS)]
+index = []
+for p in papers:
+    shards[shard(p['id'])][p['id']] = {k: p[k] for k in DETAIL if p.get(k)}
+    index.append({k: v for k, v in p.items() if k not in DETAIL} | {'has_summary': bool(p['summary']), 'has_abstract': bool(p['abstract'])})
+detail_dir = out / 'research'
+detail_dir.mkdir(exist_ok=True)
+for i, s in enumerate(shards):
+    (detail_dir / f'd{i:02d}.json').write_text(json.dumps(s, ensure_ascii=False, separators=(',', ':')))
+full_papers = papers
+papers = index
+
 for name, data in (('research.json', papers), ('candidates.json', candidates), ('parameters.json', params), ('topics.json', topics)):
     (out / name).write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')))
 print('=== Summary ===')
-print(f'papers {len(papers)} (with themes {sum(bool(p["themes"]) for p in papers)}, abstracts {sum(bool(p["abstract"]) for p in papers)}, '
-      f'summaries {sum(bool(p["summary"]) for p in papers)}) | candidates {len(candidates)} | parameters {len(params)} | topics {len(topics)}')
+print(f'papers {len(full_papers)} (with themes {sum(bool(p["themes"]) for p in full_papers)}, abstracts {sum(bool(p["abstract"]) for p in full_papers)}, '
+      f'summaries {sum(bool(p["summary"]) for p in full_papers)}) | candidates {len(candidates)} | parameters {len(params)} | topics {len(topics)}'
+      f' | detail shards {SHARDS}, largest {max((detail_dir / f"d{i:02d}.json").stat().st_size for i in range(SHARDS)):,d} bytes')
 for name in ('research.json', 'candidates.json', 'parameters.json', 'topics.json'):
     print(f'{name:16s} {(out / name).stat().st_size:>10,d} bytes')
