@@ -163,7 +163,7 @@ select{background:var(--deck);border:1px solid var(--rule);border-radius:4px;col
     $('tab-lib').setAttribute('aria-selected', m === 'lib'); $('tab-cand').setAttribute('aria-selected', m === 'cand');
     $('tabnote').textContent = m === 'lib'
       ? 'Works someone has added to the library, with their sources and, where read, our summary.'
-      : `Works a fixed set of 78 searches of OpenAlex returned since 2006, before anyone reviewed them. Expect some that miss the topic. Another ${fmt(stats.reserve)} technical works (engineering, planetary science) stay in reserve and do not appear here.`;
+      : `Works a fixed set of 78 searches of OpenAlex returned since 2006, before anyone reviewed them. Expect some that miss the topic.${stats.screened ? ` A first screening of ${fmt(stats.screened)} titles and abstracts moved ${fmt(stats.screened_in)} works into the library and set ${fmt(stats.screened_out)} aside.` : ''} Another ${fmt(stats.reserve)} technical works (engineering, planetary science) stay in reserve and do not appear here.`;
     $('sort').value = m === 'lib' ? 'year' : 'cited';
     setKinds(); renderList();
   }

@@ -104,9 +104,13 @@ for key, f in bib.items():
     })
 papers.sort(key=lambda p: (-(p['year'] or 0), p['title']))
 
+screened = {}
+if (ris / 'sweep/screen/decisions_all.tsv').exists():
+    with (ris / 'sweep/screen/decisions_all.tsv').open() as fh:
+        screened = {r['id']: r['decision'] for r in csv.DictReader(fh, delimiter='\t')}
 candidates = []
 for r in sweep_rows:
-    if r['tier'] != '1':
+    if r['tier'] != '1' or screened.get(r['openalex_id']) in ('include', 'exclude'):
         continue
     candidates.append({'id': r['openalex_id'], 'title': clean(r['title']), 'year': int(r['year']) if r['year'] else None,
                        'venue': r['venue'], 'type': r['type'], 'cited_by': int(r['cited_by_count'] or 0),
@@ -136,7 +140,9 @@ for c in candidates:
 stats = {'papers': len(papers), 'candidates': len(candidates), 'parameters': len(params), 'topics': len(topics),
          'verified': sum(r['status'] == 'ok' for r in params),
          'years': {str(y): years[y] for y in sorted(years)},
-         'sweep_works': len(sweep_rows), 'reserve': sum(r['tier'] == '2' for r in sweep_rows)}
+         'sweep_works': len(sweep_rows), 'reserve': sum(r['tier'] == '2' for r in sweep_rows),
+         'screened': len(screened), 'screened_in': sum(v == 'include' for v in screened.values()),
+         'screened_out': sum(v == 'exclude' for v in screened.values())}
 (out / 'stats.json').write_text(json.dumps(stats, separators=(',', ':')))
 
 for name, data in (('research.json', papers), ('candidates.json', candidates), ('parameters.json', params), ('topics.json', topics)):
