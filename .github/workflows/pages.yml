@@ -1,0 +1,58 @@
+# Publishes the site (docs/) to GitHub Pages and renders the daily wallpapers into it.
+# Runs on every push to main, daily at 03:30 UTC (before a 06:00 Central European shortcut), and by hand.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Render today's wallpapers
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 --directory docs > /dev/null 2>&1 &
+          sleep 2
+          mkdir -p docs/wallpaper
+          render () {
+            google-chrome --headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader \
+              --hide-scrollbars --force-device-scale-factor=1 --virtual-time-budget=30000 \
+              --window-size=$1,$2 --screenshot=docs/wallpaper/$3 "http://127.0.0.1:8000/wallpaper.html?w=$1&h=$2"
+          }
+          render 1290 2796 iphone.png
+          render 5120 2880 mac.png
+          ls -l docs/wallpaper
+          # refuse to publish a blank frame (a failed WebGL render is a small, nearly uniform PNG)
+          for f in docs/wallpaper/iphone.png docs/wallpaper/mac.png; do
+            test $(stat -c %s "$f") -gt 300000 || { echo "$f looks blank"; exit 1; }
+          done
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

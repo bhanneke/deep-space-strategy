@@ -1,0 +1,121 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Wallpaper · Deep Space Strategy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+html,body{margin:0;background:#05070d;overflow:hidden}
+#wrap{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 62%,#0c1322 0%,#05070d 70%)}
+canvas{display:block}
+.lab{position:absolute;left:0;top:0;font:500 var(--lab) "IBM Plex Sans",sans-serif;color:#c9d2e2;letter-spacing:.02em;white-space:nowrap;text-shadow:0 0 6px #05070d}
+.cap{position:absolute;left:0;right:0;text-align:center;color:#8a96ad;font:400 var(--cap) "IBM Plex Mono",monospace;letter-spacing:.04em}
+.cap b{display:block;font:700 var(--brand) "Saira Condensed",sans-serif;letter-spacing:.18em;color:#dfe5ef;text-transform:uppercase;margin-bottom:.35em}
+</style></head><body>
+<div id="wrap"><canvas id="cv"></canvas><div class="cap" id="cap"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script>
+// One still frame of the solar system on a given day, sized for a wallpaper.
+// ?w=1290&h=2796 (pixels), &date=YYYY-MM-DD (default today, UTC). Phone-shaped frames keep the top third clear for the lock-screen clock.
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const W = +q.get('w') || 1290, H = +q.get('h') || 2796, portrait = H > W;
+  const day = q.get('date') ? new Date(q.get('date') + 'T00:00:00Z') : new Date();
+  const JD = day.getTime() / 86400000 + 2440587.5;
+  const wrap = document.getElementById('wrap'), cv = document.getElementById('cv');
+  wrap.style.width = W + 'px'; wrap.style.height = H + 'px';
+  const u = Math.min(W, H) / 1000;                       // typographic unit
+  wrap.style.setProperty('--lab', (portrait ? 30 : 22) * u + 'px');
+  wrap.style.setProperty('--cap', (portrait ? 24 : 17) * u + 'px');
+  wrap.style.setProperty('--brand', (portrait ? 40 : 30) * u + 'px');
+
+  const D = await fetch('orbits.json').then(r => r.json());
+  const RAD = Math.PI / 180, dispR = a => 3 * Math.log(1 + a / 0.35);
+  function place(a, e, I, node, w, M, o) {
+    let E = M + e * Math.sin(M);
+    for (let k = 0; k < 6; k++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    const xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E);
+    const cw = Math.cos(w), sw = Math.sin(w), cn = Math.cos(node), sn = Math.sin(node), ci = Math.cos(I), si = Math.sin(I);
+    const x = (cw * cn - sw * sn * ci) * xp + (-sw * cn - cw * sn * ci) * yp;
+    const y = (cw * sn + sw * cn * ci) * xp + (-sw * sn + cw * cn * ci) * yp;
+    const z = (sw * si) * xp + (cw * si) * yp;
+    const r = Math.hypot(x, y, z), k = dispR(r) / r;
+    o.x = x * k; o.y = z * k; o.z = -y * k; return o;
+  }
+  const mean = (a, m) => (m + 0.9856076686 / Math.pow(a, 1.5) * (JD - D.epoch)) * RAD;
+  function bodyAt(b, M, o) {
+    if (b.el) {
+      const T = (JD - 2451545) / 36525, v = b.el.map((x, i) => x + b.rate[i] * T);
+      return place(v[0], v[1], v[2] * RAD, v[5] * RAD, (v[4] - v[5]) * RAD, (M === undefined ? (v[3] - v[4]) * RAD : M), o);
+    }
+    return place(b.a, b.e, b.i * RAD, b.om * RAD, b.w * RAD, M === undefined ? mean(b.a, b.m) : M, o);
+  }
+
+  const renderer = new THREE.WebGLRenderer({canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true});
+  renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(portrait ? 40 : 34, W / H, 0.1, 900);
+  if (portrait) { camera.position.set(0, 74, 64); camera.lookAt(0, 0, 0); camera.setViewOffset(W, H, 0, -H * 0.1, W, H); }
+  else { camera.position.set(0, 24, 27); camera.lookAt(0, -1.2, 0); }
+  scene.add(new THREE.AmbientLight(0x6a7488, 1.3));
+  scene.add(new THREE.PointLight(0xfff1d6, 2.4, 0, 0));
+  // background stars (decoration, fixed seed so the sky does not jump from day to day)
+  { let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const n = 2600, a = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { const uu = rnd() * 2 - 1, t = rnd() * 2 * Math.PI, r = 400, qq = Math.sqrt(1 - uu * uu); a[3 * i] = r * qq * Math.cos(t); a[3 * i + 1] = r * uu; a[3 * i + 2] = r * qq * Math.sin(t); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(a, 3));
+    scene.add(new THREE.Points(g, new THREE.PointsMaterial({color: 0xc8d2e6, size: 1.6 * u, sizeAttenuation: false, transparent: true, opacity: 0.45}))); }
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.75, 48, 32), new THREE.MeshBasicMaterial({color: 0xffd27a})));
+  const gc = document.createElement('canvas'); gc.width = gc.height = 256;
+  const gx = gc.getContext('2d'), grad = gx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grad.addColorStop(0, 'rgba(255,214,130,.9)'); grad.addColorStop(.35, 'rgba(255,190,90,.25)'); grad.addColorStop(1, 'rgba(255,170,60,0)');
+  gx.fillStyle = grad; gx.fillRect(0, 0, 256, 256);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(gc), blending: THREE.AdditiveBlending, depthWrite: false}));
+  glow.scale.set(8, 8, 1); scene.add(glow);
+
+  const LOOK = {mercury: [0xa8a29a, .14], venus: [0xe6d3a3, .21], earth: [0x4f9be8, .23], mars: [0xd9643a, .18], jupiter: [0xd8b48a, .48],
+                saturn: [0xe3cf9a, .4], uranus: [0x8fd3e6, .3], neptune: [0x4f6fe0, .29], pluto: [0xc2a68e, .11]};
+  const NAMES = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+  const lineMat = new THREE.LineBasicMaterial({color: 0x8a96ad, transparent: true, opacity: 0.32});
+  const faint = new THREE.LineBasicMaterial({color: 0x8a96ad, transparent: true, opacity: 0.09});
+  const tmp = {}, bodies = [...D.planets, ...D.others], labels = [];
+  for (const b of bodies) {
+    const look = LOOK[b.id] || [0xaeb7c8, .06], pts = [];
+    for (let k = 0; k <= 256; k++) { bodyAt(b, k / 256 * 2 * Math.PI, tmp); pts.push(new THREE.Vector3(tmp.x, tmp.y, tmp.z)); }
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), LOOK[b.id] ? lineMat : faint));
+    bodyAt(b, undefined, b);
+    const m = new THREE.Mesh(new THREE.SphereGeometry(look[1], 32, 24), new THREE.MeshStandardMaterial({color: look[0], roughness: .85}));
+    m.position.set(b.x, b.y, b.z); scene.add(m);
+    if (b.id === 'saturn') { const ring = new THREE.Mesh(new THREE.RingGeometry(.52, .78, 64), new THREE.MeshBasicMaterial({color: 0xcdbb8a, side: THREE.DoubleSide, transparent: true, opacity: .4})); ring.rotation.x = -Math.PI / 2 + .45; m.add(ring); }
+    if (NAMES.includes(b.id) && b.id !== 'mercury' && b.id !== 'venus') labels.push(b);
+  }
+  const POP = {'main belt': [0xb7c2d6, .42], 'Jupiter Trojans': [0xf0b347, .6], 'near-Earth': [0x7fd3e6, .6], 'Kuiper belt': [0x8fa6c9, .5]};
+  for (const [k, rows] of Object.entries(D.populations)) {
+    const ok = rows.filter(r => r[0] < 55 && r[1] < .95), A = new Float32Array(ok.length * 3);
+    ok.forEach((r, i) => { place(r[0], r[1], r[2] * RAD, r[3] * RAD, r[4] * RAD, mean(r[0], r[5]), tmp); A[3 * i] = tmp.x; A[3 * i + 1] = tmp.y; A[3 * i + 2] = tmp.z; });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(A, 3));
+    scene.add(new THREE.Points(g, new THREE.PointsMaterial({color: POP[k][0], size: 2 * u, sizeAttenuation: false, transparent: true, opacity: POP[k][1], depthWrite: false})));
+  }
+  renderer.render(scene, camera);
+  await document.fonts.ready;   // label widths depend on the web font
+  // labels: right of the body (left near the right edge), pushed down when they would overlap a placed label
+  const v = new THREE.Vector3(), placed = [], gap = 18 * u;
+  const pxPerUnit = d => H / 2 / (d * Math.tan(camera.fov / 2 * RAD));   // on-screen size of one scene unit at distance d
+  const items = labels.map(b => {
+    const d = camera.position.distanceTo(new THREE.Vector3(b.x, b.y, b.z)), r = (b.id === 'saturn' ? .8 : (LOOK[b.id] || [0, .06])[1]) * pxPerUnit(d);
+    v.set(b.x, b.y, b.z).project(camera); return {b, r, x: (v.x + 1) / 2 * W, y: (1 - v.y) / 2 * H};
+  }).sort((p, q) => p.y - q.y);
+  for (const it of items) {
+    const s = document.createElement('span'); s.className = 'lab'; s.textContent = it.b.name; wrap.appendChild(s);
+    const g = gap + it.r, w = s.offsetWidth, h = s.offsetHeight, left = it.x > W * .72 || it.x + g + w > W - 20 * u;
+    let x = left ? it.x - g - w : it.x + g, y = it.y - h / 2;
+    for (const p of placed) if (x < p.x + p.w && x + w > p.x && y < p.y + p.h && y + h > p.y) y = p.y + p.h + 2 * u;
+    placed.push({x, y, w, h});
+    s.style.transform = `translate(${x}px,${y}px)`;
+  }
+  const date = day.toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'});
+  const cap = document.getElementById('cap');
+  cap.innerHTML = `<b>Deep Space Strategy</b>The solar system on ${date}<br>JPL orbits · log distance scale`;
+  cap.style.bottom = (portrait ? 150 : 60) * u + 'px';
+  document.body.dataset.ready = '1';
+})();
+</script></body></html>

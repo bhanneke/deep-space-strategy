@@ -96,6 +96,7 @@ canvas{display:block}
     scene.add(new THREE.Points(g, new THREE.PointsMaterial({color: POP[k][0], size: 2 * u, sizeAttenuation: false, transparent: true, opacity: POP[k][1], depthWrite: false})));
   }
   renderer.render(scene, camera);
+  await document.fonts.ready;   // label widths depend on the web font
   // labels: right of the body (left near the right edge), pushed down when they would overlap a placed label
   const v = new THREE.Vector3(), placed = [], gap = 18 * u;
   const pxPerUnit = d => H / 2 / (d * Math.tan(camera.fov / 2 * RAD));   // on-screen size of one scene unit at distance d
