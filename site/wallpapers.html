@@ -1,0 +1,41 @@
+<title>Wallpaper · Deep Space Strategy</title>
+<meta name="description" content="A daily wallpaper for iPhone and Mac: the planets and about 1,400 asteroids at their real positions today, from JPL orbits.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="page.css">
+<style>
+main{max-width:1040px}
+.nav{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14.5px;align-items:baseline}
+.nav .brand{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);text-decoration:none;margin-right:auto}
+.nav a:not(.brand){color:var(--dim);text-decoration:none}
+.nav a:hover{color:var(--ink)}
+.walls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3.2fr);gap:20px;align-items:start}
+figure{margin:0;display:flex;flex-direction:column;gap:8px}
+figure img{width:100%;height:auto;border:1px solid var(--rule);border-radius:10px;background:var(--deck)}
+figcaption{font-size:14px;color:var(--dim)}
+figcaption code{font-size:12.5px;color:var(--ink);word-break:break-all}
+ol li{margin-bottom:6px}
+@media (max-width:760px){.walls{grid-template-columns:minmax(0,1fr)}}
+</style>
+<main>
+  <nav class="nav"><a class="brand" href="index.html">Deep Space Strategy</a><a href="index.html">Home</a><a href="library.html">Library</a><a href="research.html">Research</a><a href="parameters.html">Parameters</a><a href="https://bhanneke.github.io/solmaps/">Maps</a><a href="https://github.com/bhanneke/deep-space-strategy">GitHub</a></nav>
+  <h1>Wallpaper</h1>
+  <p class="lede">Every morning this page gets a new picture of the solar system: the planets, Pluto and about 1,400 asteroids and Kuiper belt objects where they stand that day, computed from JPL orbits. The phone version leaves the top third dark for the lock-screen clock.</p>
+  <div class="walls">
+    <figure><a href="wallpaper/iphone.png"><img src="wallpaper/iphone.png" alt="Today's solar system, phone format" width="1290" height="2796"></a>
+      <figcaption>iPhone, 1290 × 2796<br><code id="u-phone"></code></figcaption></figure>
+    <figure><a href="wallpaper/mac.png"><img src="wallpaper/mac.png" alt="Today's solar system, Mac format" width="5120" height="2880"></a>
+      <figcaption>Mac, 5120 × 2880<br><code id="u-mac"></code></figcaption></figure>
+  </div>
+  <h2>Set it every morning</h2>
+  <ol>
+    <li>In the Shortcuts app, make a shortcut with two actions: <b>Get Contents of URL</b> with one of the addresses above, then <b>Set Wallpaper</b> (on iPhone choose Lock Screen, on Mac the desktop).</li>
+    <li>Under Automation, add a daily automation, for example at 06:00, that runs the shortcut.</li>
+  </ol>
+  <p>The picture changes once a day, shortly before 06:00 in Central Europe. Distances follow a logarithmic scale so that Mercury and Neptune fit in one frame. The picture draws the planets far larger than true scale, and the background stars serve as decoration.</p>
+  <p class="foot">Orbits from JPL (planet elements valid 1800–2050, small-body elements from the JPL Small-Body Database). The same orbits drive the figure on the <a href="index.html">home page</a> and the <a href="https://bhanneke.github.io/solmaps/">solmaps</a> route engine.</p>
+</main>
+<script>
+for (const [id, f] of [['u-phone', 'iphone.png'], ['u-mac', 'mac.png']]) document.getElementById(id).textContent = new URL('wallpaper/' + f, location.href).href;
+</script>

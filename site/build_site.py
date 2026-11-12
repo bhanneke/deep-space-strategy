@@ -13,8 +13,9 @@ def wrap(html):
     return head + html + '\n</body></html>\n'
 
 (docs / 'index.html').write_text(wrap((root / 'site' / 'index.html').read_text()))
-for page in ('library.html', 'research.html', 'parameters.html'):
+for page in ('library.html', 'research.html', 'parameters.html', 'wallpapers.html'):
     (docs / page).write_text(wrap((root / 'site' / page).read_text()))
+shutil.copy(root / 'site' / 'wallpaper.html', docs / 'wallpaper.html')   # full document; the daily workflow renders it to docs/wallpaper/*.png
 # refreshed by site/build_library.py, site/fetch_orbits.py and site/build_research.py
 for data in ('library.json', 'orbits.json', 'research.json', 'candidates.json', 'parameters.json', 'topics.json', 'stats.json', 'llms.txt'):
     shutil.copy(root / 'site' / data, docs / data)
