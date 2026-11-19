@@ -19,7 +19,7 @@ ol li{margin-bottom:6px}
 @media (max-width:760px){.walls{grid-template-columns:minmax(0,1fr)}}
 </style>
 <main>
-  <nav class="nav"><a class="brand" href="index.html">Deep Space Strategy</a><a href="index.html">Home</a><a href="library.html">Library</a><a href="research.html">Research</a><a href="parameters.html">Parameters</a><a href="https://bhanneke.github.io/solmaps/">Maps</a><a href="https://github.com/bhanneke/deep-space-strategy">GitHub</a></nav>
+  <nav class="nav"><a class="brand" href="index.html">Deep Space Strategy</a><a href="index.html">Home</a><a href="library.html">Library</a><a href="research.html">Research</a><a href="parameters.html">Parameters</a><a href="https://solmaps.deepspacestrategy.org/">Maps</a><a href="https://github.com/bhanneke/deep-space-strategy">GitHub</a></nav>
   <h1>Wallpaper</h1>
   <p class="lede">Every morning this page gets a new picture of the solar system: the planets, Pluto and about 1,400 asteroids and Kuiper belt objects where they stand that day, computed from JPL orbits. The phone version leaves the top third dark for the lock-screen clock.</p>
   <div class="walls">
@@ -34,7 +34,7 @@ ol li{margin-bottom:6px}
     <li>Under Automation, add a daily automation, for example at 06:00, that runs the shortcut.</li>
   </ol>
   <p>The picture changes once a day, shortly before 06:00 in Central Europe. Distances follow a logarithmic scale so that Mercury and Neptune fit in one frame. The picture draws the planets far larger than true scale, and the background stars serve as decoration.</p>
-  <p class="foot">Orbits from JPL (planet elements valid 1800–2050, small-body elements from the JPL Small-Body Database). The same orbits drive the figure on the <a href="index.html">home page</a> and the <a href="https://bhanneke.github.io/solmaps/">solmaps</a> route engine.</p>
+  <p class="foot">Orbits from JPL (planet elements valid 1800–2050, small-body elements from the JPL Small-Body Database). The same orbits drive the figure on the <a href="index.html">home page</a> and the <a href="https://solmaps.deepspacestrategy.org/">solmaps</a> route engine.</p>
 </main>
 <script>
 for (const [id, f] of [['u-phone', 'iphone.png'], ['u-mac', 'mac.png']]) document.getElementById(id).textContent = new URL('wallpaper/' + f, location.href).href;

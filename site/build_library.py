@@ -35,7 +35,7 @@ def tag(key):
     return registry[key]
 
 
-SOL = 'https://bhanneke.github.io/solmaps/'
+SOL = 'https://solmaps.deepspacestrategy.org/'
 with urllib.request.urlopen(SOL + 'progress.json', timeout=30) as r:
     progress = json.load(r)
 atlas = json.loads((solmaps / 'atlas/atlas_dataset.json').read_text())

@@ -1,5 +1,5 @@
 # Build the Deep Space Strategy site into docs/ for GitHub Pages: the landing page and the forwarding page that sends the
-# old map addresses to solmaps (https://bhanneke.github.io/solmaps/), where the maps live since 2026-10-31.
+# old map addresses to solmaps (https://solmaps.deepspacestrategy.org/), where the maps live since 2026-10-31.
 import pathlib, shutil
 
 root = pathlib.Path(__file__).resolve().parent.parent
@@ -24,5 +24,6 @@ shutil.copytree(root / 'site' / 'research', docs / 'research')
 shutil.copy(root / 'site' / '404.html', docs / '404.html')
 shutil.copy(root / 'site' / 'page.css', docs / 'page.css')
 (docs / '.nojekyll').write_text('')
+(docs / 'CNAME').write_text('deepspacestrategy.org\n')   # GitHub Pages custom domain
 for p in sorted(docs.iterdir()):
     print(f'{p.name:24s} {p.stat().st_size:>10,d} bytes')
